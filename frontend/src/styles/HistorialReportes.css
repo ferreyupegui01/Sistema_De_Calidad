@@ -1,0 +1,274 @@
+/* frontend/src/styles/HistorialReportes.css */
+
+.history-view {
+    padding-bottom: 2rem;
+    animation: fadeIn 0.4s ease-in-out;
+}
+
+/* --- BARRA DE CONTROL (BUSCADOR Y FILTROS) --- */
+.control-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    margin-bottom: 1.5rem;
+    border: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    min-width: 300px;
+}
+
+.search-box svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.7rem 1rem 0.7rem 2.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.2s;
+    background-color: #f8fafc;
+}
+
+.search-input:focus {
+    background-color: white;
+    border-color: #0c4760;
+    box-shadow: 0 0 0 3px rgba(12, 71, 96, 0.1);
+}
+
+.filter-select {
+    padding: 0.7rem 2rem 0.7rem 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background-color: white;
+    color: #334155;
+    font-weight: 500;
+    cursor: pointer;
+    outline: none;
+}
+
+/* --- TABLA MODERNA (CARD STYLE) --- */
+.modern-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 10px; /* Espacio entre filas */
+}
+
+.modern-table thead th {
+    color: #64748b;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 0 1.5rem;
+    text-align: left;
+    font-weight: 700;
+}
+
+.modern-row {
+    background: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.modern-row:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.05);
+}
+
+.modern-cell {
+    padding: 1.2rem 1.5rem;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    color: #334155;
+    vertical-align: middle;
+}
+
+.modern-cell:first-child {
+    border-left: 1px solid #e2e8f0;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+}
+
+.modern-cell:last-child {
+    border-right: 1px solid #e2e8f0;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    text-align: right;
+}
+
+/* --- CELDAS ESPECIFICAS --- */
+.date-info {
+    display: flex;
+    flex-direction: column;
+}
+.date-main { font-weight: 600; color: #0f172a; }
+.date-sub { font-size: 0.8rem; color: #94a3b8; }
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.user-avatar-small {
+    width: 32px;
+    height: 32px;
+    background: #e0f2fe;
+    color: #0369a1;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.asset-info {
+    display: flex;
+    flex-direction: column;
+}
+.asset-name { font-weight: 700; color: #0c4760; font-size: 0.95rem; }
+.form-name { font-size: 0.8rem; color: #64748b; display: flex; align-items: center; gap: 5px; }
+
+/* --- BADGES --- */
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.4rem 0.8rem;
+    border-radius: 30px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.status-pill.danger { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.status-pill.success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+
+/* --- BOTONES DE ACCIÓN --- */
+.action-group {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.btn-text-modern {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.45rem 0.9rem;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    background-color: white;
+    color: #475569;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-text-modern:hover {
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
+    color: #0f172a;
+    transform: translateY(-1px);
+}
+
+.btn-acpm-create {
+    background-color: #fff1f2;
+    color: #be123c;
+    border-color: #fecdd3;
+}
+.btn-acpm-create:hover {
+    background-color: #be123c;
+    color: white;
+    border-color: #be123c;
+}
+
+.btn-acpm-view {
+    background-color: #ecfdf5;
+    color: #059669;
+    border-color: #a7f3d0;
+}
+.btn-acpm-view:hover {
+    background-color: #059669;
+    color: white;
+    border-color: #059669;
+}
+
+.empty-state-row {
+    text-align: center;
+    padding: 3rem;
+    color: #94a3b8;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   RESPONSIVE (MÓVIL Y TABLET < 900px)
+   ========================================================================== */
+@media (max-width: 900px) {
+    
+    /* 1. Header más compacto */
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+        margin-bottom: 1.5rem;
+    }
+
+    /* 2. Barra de Control en Columna */
+    .control-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+        padding: 1rem;
+    }
+
+    .search-box {
+        min-width: 100%;
+        width: 100%;
+    }
+
+    /* Ajuste para el contenedor de filtros que usa style inline en el JSX */
+    .control-bar > div:last-child {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .filter-select {
+        flex: 1; /* El select ocupa todo el espacio disponible */
+    }
+
+    /* 3. Tabla con Scroll Horizontal */
+    .modern-table {
+        min-width: 800px; /* Ancho mínimo para forzar scroll y no romper diseño */
+    }
+
+    .modern-cell {
+        padding: 1rem 0.8rem; /* Padding reducido */
+    }
+
+    /* Botones más grandes para touch */
+    .btn-text-modern {
+        padding: 0.6rem 1rem; 
+    }
+}

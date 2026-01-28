@@ -1,0 +1,334 @@
+/* frontend/src/styles/Drive.css */
+
+:root {
+    --color-border: #e2e8f0;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.02);
+    --color-text: #334155;
+    --color-text-secondary: #64748b;
+    --color-acento: #0c4760;
+    --color-bg: #f8fafc;
+}
+
+.drive-container {
+    padding: 1.5rem 2rem;
+    background-color: var(--color-bg);
+    min-height: calc(100vh - 70px);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    animation: fadeIn 0.4s ease;
+}
+
+/* Clases específicas para el contenedor embebido (dentro del modal) */
+.file-manager-embedded {
+    background: #f8fafc;
+    padding: 1rem;
+    border-radius: 8px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Importante para que el scroll sea interno */
+}
+
+/* --- Barra de Herramientas --- */
+.docs-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    background-color: #fff;
+    padding: 0.8rem 1.2rem;
+    border-radius: 12px;
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* --- Breadcrumbs (Ruta de carpetas) --- */
+.document-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+    flex-wrap: wrap; /* Si la ruta es larga, que baje */
+    flex: 1;
+}
+
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 20px;
+    transition: background 0.2s, color 0.2s;
+    background-color: transparent;
+    color: #64748b;
+    white-space: nowrap; /* No romper nombres de carpeta */
+}
+
+.breadcrumb-item:hover {
+    background-color: #f1f5f9;
+    color: var(--color-acento);
+}
+
+.breadcrumb-item.active {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    font-weight: 600;
+    cursor: default;
+}
+
+/* --- Botones de Acción (Crear Carpeta / Subir) --- */
+.btn-icon-action {
+    border: none;
+    height: 38px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0 1rem;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: transform 0.1s, background-color 0.2s;
+}
+
+.btn-icon-action:active { transform: scale(0.98); }
+
+.btn-icon-action.primary {
+    background: var(--color-acento);
+    color: white;
+    box-shadow: 0 2px 5px rgba(12, 71, 96, 0.2);
+}
+.btn-icon-action.primary:hover { background: #09425a; }
+
+.btn-icon-action.secondary {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+.btn-icon-action.secondary:hover { background: #e2e8f0; color: #1e293b; }
+
+
+/* --- LISTA DE DOCUMENTOS (TABLA) --- */
+.document-list-container {
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-sm);
+    flex: 1; /* Ocupar el resto del espacio vertical */
+    overflow: hidden; /* Contener el scroll */
+    min-height: 300px;
+}
+
+/* Cabecera de la lista */
+.document-list-header {
+    display: grid;
+    /* Estructura PC: Icono | Nombre | Acciones */
+    /* Ajustamos según FileManager.jsx que usa gridTemplateColumns inline, 
+       pero aquí definimos el default para CSS puro si se quitara el inline */
+    grid-template-columns: 40px 1fr 100px; 
+    padding: 1rem 1.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #f1f5f9;
+    background-color: #fff;
+}
+
+/* Fila de Documento */
+.document-row {
+    display: grid;
+    /* Estructura PC: Icono | Nombre | Acciones */
+    grid-template-columns: 40px 1fr 100px;
+    align-items: center;
+    background-color: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
+    padding: 0.9rem 1.5rem;
+    transition: all 0.15s ease;
+    cursor: pointer;
+}
+
+.document-row:last-child { border-bottom: none; }
+
+.document-row:hover {
+    background-color: #f8fafc;
+}
+
+/* Iconos de Archivo */
+.doc-icon-wrapper {
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #cbd5e1;
+}
+
+/* Colores por tipo */
+.icon-folder { color: #f59e0b; }
+.icon-pdf { color: #ef4444; }
+.icon-word { color: #2563eb; }
+.icon-excel { color: #16a34a; }
+.icon-img { color: #8b5cf6; }
+.icon-default { color: #cbd5e1; }
+
+/* Nombre del Archivo */
+.doc-name {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 15px;
+}
+
+/* Acciones (Botones de Fila) */
+.doc-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    opacity: 0.6; /* Transparente en PC hasta hover */
+    transition: opacity 0.2s;
+}
+
+.document-row:hover .doc-actions { opacity: 1; }
+
+.btn-row-action {
+    background: transparent;
+    border: 1px solid transparent;
+    color: #94a3b8;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.btn-row-action:hover {
+    background-color: #f1f5f9;
+    color: var(--color-acento);
+    border-color: #e2e8f0;
+}
+
+.btn-row-action.delete:hover {
+    background-color: #fef2f2;
+    color: #ef4444;
+    border-color: #fecaca;
+}
+
+.btn-row-action.download:hover {
+    background-color: #f0f9ff;
+    color: #0284c7;
+    border-color: #bae6fd;
+}
+
+/* Loader */
+.spin {
+    animation: spin 1s linear infinite;
+    color: var(--color-acento);
+    font-size: 2rem;
+}
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+
+/* ==========================================================================
+   RESPONSIVE (MÓVIL Y TABLET < 768px)
+   ========================================================================== */
+@media (max-width: 768px) {
+    
+    .drive-container {
+        padding: 10px; /* Menos padding general */
+    }
+
+    /* 1. Header del Componente (Título y Flecha volver) */
+    .file-manager-embedded > div:first-child {
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .file-manager-embedded h3 {
+        font-size: 1rem !important; /* Título más pequeño */
+    }
+
+    /* 2. Barra de Herramientas */
+    .docs-toolbar {
+        flex-direction: column;
+        align-items: stretch; /* Botones ancho completo */
+        padding: 0.8rem;
+        gap: 0.8rem;
+    }
+
+    .document-breadcrumb {
+        width: 100%;
+        overflow-x: auto; /* Scroll horizontal si la ruta es larga */
+        white-space: nowrap;
+        padding-bottom: 5px; /* Espacio para scrollbar */
+    }
+
+    /* Botones de acción toolbar */
+    .docs-toolbar > div:last-child {
+        display: flex;
+        width: 100%;
+        gap: 10px;
+    }
+
+    .btn-icon-action {
+        flex: 1; /* Botones se reparten el ancho */
+        justify-content: center;
+    }
+
+    /* 3. Lista de Archivos */
+    .document-list-header {
+        display: none !important; /* Ocultar cabecera de tabla */
+    }
+
+    .document-list-container {
+        border-top: 1px solid #e2e8f0;
+    }
+
+    /* Ajuste de Fila para Móvil */
+    /* Importante: Sobrescribimos el grid inline del JSX usando !important si es necesario, 
+       pero idealmente el CSS debería mandar. 
+       Estructura Móvil: Icono (40px) | Nombre (Auto) | Acciones (80px) */
+    .document-row {
+        grid-template-columns: 40px 1fr auto !important; 
+        padding: 1rem 0.8rem;
+        gap: 10px;
+    }
+
+    .doc-name {
+        font-size: 0.9rem;
+        white-space: normal; /* Permitir que el nombre baje de línea si es largo */
+        line-height: 1.3;
+    }
+
+    /* Acciones siempre visibles (no hay hover en touch) */
+    .doc-actions {
+        opacity: 1; 
+        gap: 10px; /* Separar más los botones para el dedo */
+    }
+
+    .btn-row-action {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+        background-color: #f8fafc; /* Fondo suave para que parezcan botones */
+        border: 1px solid #e2e8f0;
+    }
+}

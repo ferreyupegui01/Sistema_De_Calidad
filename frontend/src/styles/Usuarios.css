@@ -1,0 +1,180 @@
+/* frontend/src/styles/Usuarios.css */
+
+/* --- BARRA DE FILTROS --- */
+.filters-bar {
+    background-color: #ffffff;
+    padding: 1rem;
+    border-radius: 12px;
+    /* Sombra suave que la hace "flotar" */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap; /* Permite que los elementos bajen si no caben en pantallas intermedias */
+}
+
+/* Input de Búsqueda */
+.search-input-container {
+    position: relative;
+    flex: 2; /* Ocupa el doble de espacio que el select en PC */
+    min-width: 300px;
+}
+
+.search-input-container svg {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 1.1rem;
+    pointer-events: none;
+}
+
+.search-input-container input {
+    width: 100%;
+    height: 50px;
+    padding-left: 48px !important;
+    padding-right: 1rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background-color: #f8fafc; /* Fondo gris claro */
+    font-size: 0.95rem;
+    color: #0f172a;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.search-input-container input:focus {
+    background-color: #ffffff;
+    border-color: #0c4760; /* Color primario */
+    box-shadow: 0 0 0 3px rgba(12, 71, 96, 0.1);
+}
+
+/* Selector */
+.filter-select-container {
+    flex: 1;
+    min-width: 200px;
+}
+
+.filter-select-container select {
+    width: 100%;
+    height: 50px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background-color: #f8fafc;
+    padding: 0 1rem;
+    font-size: 0.95rem;
+    color: #334155;
+    cursor: pointer;
+    outline: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+.filter-select-container select:focus {
+    border-color: #0c4760; /* Color primario */
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(12, 71, 96, 0.1);
+}
+
+/* --- BOTÓN NUEVO USUARIO (Destacado) --- */
+.btn-new-user {
+    background-color: #0c4760; /* Color primario */
+    color: white;
+    padding: 0.9rem 1.8rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    box-shadow: 0 4px 6px rgba(12, 71, 96, 0.25);
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.btn-new-user:hover {
+    background-color: #083548;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 8px rgba(12, 71, 96, 0.3);
+}
+
+/* Botones de Acción (Tabla) */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-action {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    background-color: #ffffff;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-size: 1rem;
+}
+
+/* Colores al pasar el mouse (Hover) */
+.btn-edit:hover { 
+    border-color: #0c4760; 
+    background-color: #f0f9ff; 
+    color: #0c4760;
+}
+.btn-toggle-off:hover { /* Inactivar */
+    border-color: #ef4444; 
+    background-color: #fef2f2; 
+    color: #ef4444;
+}
+.btn-toggle-on:hover { /* Activar */
+    border-color: #10b981; 
+    background-color: #ecfdf5; 
+    color: #10b981;
+}
+.btn-reset:hover { 
+    border-color: #f59e0b; 
+    background-color: #fffbeb; 
+    color: #d97706;
+}
+
+/* ==========================================================================
+   RESPONSIVE (MÓVIL Y TABLET < 900px)
+   ========================================================================== */
+@media (max-width: 900px) {
+    
+    /* 1. Barra de Filtros en Columna */
+    .filters-bar {
+        flex-direction: column; /* Apilar verticalmente */
+        align-items: stretch; /* Estirar hijos al ancho completo */
+        gap: 15px; /* Más espacio vertical entre inputs */
+        padding: 1rem;
+    }
+
+    /* 2. Inputs al 100% de ancho */
+    .search-input-container {
+        width: 100%;
+        min-width: auto; /* Eliminar restricción mínima */
+        flex: none; /* Dejar de usar flex grow */
+    }
+
+    .filter-select-container {
+        width: 100%;
+        min-width: auto;
+        flex: none;
+    }
+
+    /* 3. Ajuste de Botones de Acción en Móvil */
+    /* Asegurar que sean fáciles de tocar */
+    .btn-action {
+        width: 40px; /* Un poco más grandes */
+        height: 40px;
+    }
+}

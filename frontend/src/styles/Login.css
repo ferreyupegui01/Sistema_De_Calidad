@@ -1,0 +1,287 @@
+/* frontend/src/styles/Login.css */
+
+:root {
+    /* COLOR FIJO SOLICITADO */
+    --login-primary: #0c4760;
+    /* Fondos */
+    --login-bg-page: #eef2f5;  /* Gris muy suave para el fondo de pantalla */
+    --login-bg-card: #ffffff;  /* Blanco puro para la tarjeta */
+    
+    /* Bordes */
+    --login-border: #d1d5db;
+}
+
+.login-wrapper {
+    min-height: 100vh; /* Asegura altura completa */
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--login-bg-page);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    padding: 20px; /* Margen de seguridad para móviles */
+}
+
+/* Tarjeta Principal */
+.login-card-split {
+    display: flex;
+    width: 100%;
+    max-width: 900px; /* Ancho máximo en PC */
+    height: 600px;    /* Altura fija en PC */
+    background: var(--login-bg-card);
+    /* Sombra elegante y suave */
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+    border-radius: 16px; /* Bordes más redondeados */
+    overflow: hidden;
+    transition: all 0.3s ease; /* Suavizar cambios de tamaño */
+}
+
+/* --- PANEL IZQUIERDO: AZUL SÓLIDO --- */
+.login-left {
+    flex: 1;
+    background-color: var(--login-primary); /* COLOR #0c4760 FIJO */
+    color: #ffffff;
+    padding: 4rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    overflow: hidden; /* Para efectos decorativos si se agregan */
+}
+
+.left-content h1 {
+    font-size: 2.5rem;
+    font-weight: 300; /* Letra fina (Light) para elegancia */
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+    color: #ffffff !important;
+}
+
+.underline-accent {
+    width: 60px;
+    height: 4px;
+    background-color: #ffffff;
+    margin-bottom: 1.5rem;
+    border-radius: 2px;
+}
+
+.left-content p {
+    font-size: 1rem;
+    font-weight: 300; /* Letra fina */
+    color: rgba(255, 255, 255, 0.9);
+    max-width: 90%;
+    line-height: 1.6;
+}
+
+/* --- PANEL DERECHO: FORMULARIO --- */
+.login-right {
+    flex: 1;
+    padding: 3rem 4rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background-color: #ffffff;
+    position: relative;
+}
+
+/* Logo */
+.logo-container {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.logo-login {
+    max-width: 160px; /* Tamaño controlado */
+    height: auto;
+}
+
+/* Nombre de la Empresa */
+.company-name {
+    text-align: center;
+    color: #0f172a !important; /* Casi negro */
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.5px;
+}
+
+/* Subtítulo "Iniciar Sesión" */
+.login-subtitle {
+    text-align: center;
+    color: #64748b; /* Gris texto */
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 2rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Inputs */
+.input-group {
+    margin-bottom: 1.2rem;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    color: #334155;
+    font-weight: 600;
+}
+
+.input-wrapper {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--login-border);
+    border-radius: 8px; /* Borde redondeado */
+    padding: 0 1rem;
+    background-color: #f8fafc; /* Fondo input gris muy claro */
+    height: 48px;
+    transition: all 0.2s;
+}
+
+.input-wrapper:focus-within {
+    border-color: var(--login-primary); /* Azul al escribir */
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(12, 71, 96, 0.1);
+}
+
+.input-icon {
+    color: #64748b;
+    margin-right: 12px;
+    font-size: 1rem;
+}
+
+.input-wrapper input {
+    border: none;
+    background: transparent;
+    outline: none;
+    width: 100%;
+    height: 100%;
+    font-size: 0.95rem;
+    color: #0f172a;
+    font-weight: 500;
+}
+
+.input-wrapper input::placeholder {
+    color: #94a3b8;
+}
+
+/* Botón Ingresar */
+.btn-login-split {
+    margin-top: 1.5rem;
+    background-color: var(--login-primary); /* COLOR #0c4760 FIJO */
+    color: #ffffff;
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 6px rgba(12, 71, 96, 0.2);
+}
+
+.btn-login-split:hover {
+    background-color: #09425a;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(12, 71, 96, 0.3);
+}
+
+.btn-login-split:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Alertas de error */
+.alerta-error {
+    background-color: #fef2f2;
+    color: #991b1b;
+    padding: 0.8rem;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+}
+
+/* Botón Volver Flotante (Para PC) */
+.btn-back-nav {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.btn-back-nav:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--login-primary);
+}
+
+/* ==========================================================================
+   RESPONSIVE (MÓVIL Y TABLET < 900px)
+   ========================================================================== */
+@media (max-width: 900px) {
+    .login-wrapper {
+        padding: 15px;
+        align-items: flex-start; /* Subir contenido en móvil para que no quede cortado */
+        overflow-y: auto; /* Permitir scroll si es muy alto */
+    }
+
+    .login-card-split {
+        flex-direction: column; /* Apilar Verticalmente */
+        width: 100%;
+        max-width: 450px; /* Ancho máximo para móvil/tablet */
+        height: auto; /* Altura automática según contenido */
+        margin-top: 30px; /* Espacio para el botón volver */
+    }
+    
+    /* Panel Azul (Arriba) */
+    .login-left {
+        padding: 2.5rem 2rem;
+        text-align: center;
+        align-items: center;
+    }
+
+    .left-content h1 {
+        font-size: 1.8rem; /* Título más pequeño */
+    }
+    
+    .left-content p {
+        font-size: 0.9rem;
+    }
+
+    .underline-accent {
+        margin: 1rem auto; /* Centrar línea */
+    }
+
+    /* Panel Blanco (Abajo) */
+    .login-right {
+        padding: 2.5rem 2rem;
+    }
+
+    /* Botón Volver en Móvil */
+    .btn-back-nav {
+        top: 10px;
+        left: 10px;
+        background-color: white; /* Fondo blanco para que se lea sobre gris */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+}

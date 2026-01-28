@@ -1,0 +1,388 @@
+/* frontend/src/styles/GestionTrazabilidad.css */
+
+/* --- CONTENEDOR PRINCIPAL --- */
+.traza-container {
+    animation: fadeIn 0.4s ease-out;
+    padding-bottom: 2rem;
+}
+
+/* --- TABS DE NAVEGACIÓN --- */
+.traza-tabs {
+    display: flex;
+    gap: 5px;
+    background: #f1f5f9;
+    padding: 5px;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e2e8f0;
+    flex-wrap: wrap; /* Para móviles */
+}
+
+.traza-tabs button {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    background: transparent;
+    color: #64748b;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1; /* Distribución equitativa */
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.traza-tabs button:hover {
+    color: #0c4760;
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.traza-tabs button.active {
+    background: white;
+    color: #0c4760;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* --- VISTA: REPOSITORIO (GRID DE CARPETAS) --- */
+.section-actions { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: flex-start; 
+    margin-bottom: 1.5rem; 
+    flex-wrap: wrap; 
+    gap: 10px; 
+}
+
+.section-title { margin: 0; font-size: 1.2rem; color: #0c4760; font-weight: 700; }
+.section-subtitle { margin: 0; color: #64748b; font-size: 0.9rem; }
+
+.grid-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 15px;
+}
+
+.doc-card {
+    background: white;
+    padding: 1.2rem;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.doc-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 15px rgba(0,0,0,0.05);
+    border-color: #cbd5e1;
+}
+
+.doc-card-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.icon-wrapper {
+    width: 45px;
+    height: 45px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+}
+
+.doc-card h4 { margin: 0; color: #1e293b; font-size: 1rem; font-weight: 600; }
+.doc-card p { margin: 5px 0 0 0; fontSize: 0.8rem; color: #64748b; }
+
+/* Botón "Nueva Carpeta" como tarjeta */
+.new-card-btn {
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    min-height: 140px;
+    color: #94a3b8;
+    transition: all 0.2s;
+    background: #f8fafc;
+}
+.new-card-btn:hover {
+    border-color: #0c4760;
+    color: #0c4760;
+    background: #f0f9ff;
+}
+
+/* Botón borrar carpeta */
+.btn-icon-delete {
+    border: none; 
+    background: transparent; 
+    color: #ef4444; 
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+.btn-icon-delete:hover { background: #fee2e2; }
+
+
+/* --- VISTA: FICHAS TÉCNICAS (LAYOUT DIVIDIDO) --- */
+.fichas-layout {
+    display: grid;
+    grid-template-columns: 1fr 2fr; /* Izquierda subida, Derecha lista */
+    gap: 20px;
+    align-items: start;
+}
+
+/* Paneles Blancos */
+.panel-upload, .panel-list {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.panel-upload h3, .panel-list h3 { 
+    margin-top: 0; 
+    font-size: 1rem; 
+    color: #0c4760; 
+    display: flex; 
+    align-items: center; 
+    gap: 8px; 
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+}
+
+.full-width { width: 100%; margin-top: 10px; }
+
+/* Cabecera de lista con buscador */
+.list-header { 
+    display: flex; 
+    justify-content: space-between; 
+    margin-bottom: 1rem; 
+    align-items: center; 
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.search-wrapper { 
+    position: relative; 
+    flex: 1;
+    min-width: 200px; 
+}
+.search-icon { 
+    position: absolute; 
+    top: 50%; 
+    transform: translateY(-50%); 
+    left: 12px; 
+    color: #94a3b8; 
+}
+.search-wrapper input { 
+    width: 100%; 
+    padding: 8px 8px 8px 35px; 
+    border-radius: 20px; 
+    border: 1px solid #e2e8f0; 
+    outline: none; 
+    background: #f8fafc;
+    font-size: 0.9rem;
+}
+.search-wrapper input:focus {
+    background: white;
+    border-color: #0c4760;
+}
+
+/* Items de la lista de Fichas */
+.list-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.list-item { 
+    display: flex; 
+    align-items: center; 
+    padding: 12px; 
+    border: 1px solid #f1f5f9;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+.list-item:hover { background: #f8fafc; }
+
+.item-icon { margin-right: 15px; color: #0c4760; font-size: 1.2rem; }
+.item-info { flex: 1; }
+.item-name { font-weight: 600; font-size: 0.9rem; color: #334155; }
+.item-date { font-size: 0.75rem; color: #94a3b8; }
+
+/* BOTONES DE ACCIÓN (Fichas) */
+.item-actions { 
+    display: flex; 
+    gap: 8px; 
+}
+
+.btn-action-icon { 
+    width: 32px; 
+    height: 32px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    color: #64748b; 
+    background: white; 
+    cursor: pointer; 
+    transition: all 0.2s;
+}
+.btn-action-icon:hover { 
+    border-color: #0c4760; 
+    color: #0c4760; 
+    background: #f0f9ff;
+}
+.btn-action-icon.delete:hover { 
+    border-color: #fee2e2; 
+    color: #ef4444; 
+    background: #fff1f2;
+}
+
+.empty-msg { text-align: center; color: #94a3b8; font-style: italic; padding: 2rem; }
+
+
+/* --- VISTA: CERTIFICADOS --- */
+.btn-group-responsive { display: flex; gap: 10px; }
+
+.search-bar-full {
+    background: white; 
+    padding: 12px 20px; 
+    border-radius: 12px; 
+    border: 1px solid #e2e8f0; 
+    margin-bottom: 1.5rem; 
+    display: flex; 
+    align-items: center; 
+    gap: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+.search-bar-full input { 
+    border: none; 
+    outline: none; 
+    flex: 1; 
+    font-size: 0.95rem; 
+    color: #334155;
+}
+
+/* =========================================
+   BOTONES DE ACCIÓN (TABLA CERTIFICADOS)
+   ========================================= */
+
+.action-buttons {
+    display: flex;
+    gap: 8px; /* Espacio entre botones */
+    align-items: center;
+    justify-content: flex-end; /* Alinear a la derecha */
+}
+
+/* 1. ESTILO BASE UNIFICADO (Para todos los botones) */
+.btn-action {
+    height: 38px; /* Altura unificada y cómoda */
+    min-width: 38px; /* Ancho mínimo para que sean cuadrados si son solo icono */
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    color: #64748b;
+    font-size: 1rem; /* Iconos un poco más grandes */
+    cursor: pointer;
+    
+    /* Flexbox para centrar perfectamente el contenido */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    padding: 0; /* Sin padding por defecto para que los iconos queden centrados */
+}
+
+/* Hover genérico */
+.btn-action:hover {
+    border-color: #0c4760;
+    color: #0c4760;
+    background: #f8fafc;
+    transform: translateY(-2px); /* Pequeña elevación */
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+}
+
+/* 2. ESTILO ESPECÍFICO PARA EL BOTÓN "GENERAR" (Con texto) */
+.btn-action.primary-outline {
+    width: auto; /* Permitir que crezca para que quepa el texto */
+    padding: 0 16px; /* Espacio amplio a los lados del texto */
+    gap: 8px; /* Separación entre el icono y la palabra "Generar" */
+    
+    /* Colores Específicos */
+    background: #e0f2fe;
+    color: #0284c7;
+    border-color: #bae6fd;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.btn-action.primary-outline:hover {
+    background: #0c4760;
+    color: white;
+    border-color: #0c4760;
+}
+/* IFRAME DASHBOARD */
+.iframe-container {
+    padding: 0; 
+    overflow: hidden; 
+    height: 80vh; 
+    border-radius: 12px; 
+    border: 1px solid #e2e8f0;
+}
+
+/* ANIMACIONES */
+.fade-in { animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ==========================================================================
+   RESPONSIVE (MÓVIL)
+   ========================================================================== */
+@media (max-width: 900px) {
+    .fichas-layout {
+        grid-template-columns: 1fr; /* Una columna en móvil */
+    }
+    
+    .list-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-wrapper { width: 100%; }
+
+    .hide-mobile { display: none; } /* Ocultar texto de botones en móvil si es necesario */
+    
+    .iframe-container { height: 60vh; }
+    
+    .section-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .btn-group-responsive {
+        width: 100%;
+    }
+    .btn-group-responsive button {
+        flex: 1;
+        justify-content: center;
+    }
+}

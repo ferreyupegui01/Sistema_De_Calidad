@@ -1,0 +1,636 @@
+/* frontend/src/styles/Reportes.css */
+
+/* --- DASHBOARD COLABORADOR --- */
+.colaborador-dashboard {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 1rem;
+    animation: fadeIn 0.5s ease;
+}
+
+.welcome-banner h1 {
+    font-size: 1.8rem;
+    color: #0c4760;
+    margin-bottom: 0.2rem;
+}
+.welcome-banner p {
+    color: #64748b;
+    margin-bottom: 2rem;
+}
+
+/* Botón Gigante (Estilo Base PC) */
+.btn-big-action {
+    width: 100%;
+    background: linear-gradient(135deg, #0c4760, #0ea5e9);
+    border: none;
+    border-radius: 16px;
+    padding: 2.5rem;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    box-shadow: 0 10px 20px rgba(12, 71, 96, 0.2);
+    transition: transform 0.2s, box-shadow 0.2s;
+    /* El margen bottom se maneja en el grid container normalmente, 
+       pero se mantiene por compatibilidad si se usa fuera */
+    margin-bottom: 0; 
+}
+
+.btn-big-action:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(12, 71, 96, 0.3);
+}
+
+.icon-circle {
+    background: rgba(255, 255, 255, 0.2);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+}
+
+.btn-big-action span {
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Tabla Historial Limpia */
+.history-section h3 {
+    font-size: 1.1rem;
+    color: #334155;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.table-container-clean {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
+    overflow-x: auto; /* Scroll horizontal si es necesario */
+}
+
+.clean-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px; /* Ancho mínimo para forzar scroll en móviles muy pequeños */
+}
+
+.clean-table th {
+    background: #f8fafc;
+    text-align: left;
+    padding: 1rem;
+    font-size: 0.8rem;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.clean-table td {
+    padding: 1rem;
+    border-top: 1px solid #f1f5f9;
+    color: #1e293b;
+    font-size: 0.95rem;
+}
+
+.tag {
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.tag-success { background: #dcfce7; color: #166534; }
+.tag-fail { background: #fee2e2; color: #991b1b; }
+
+/* --- WIZARD PRO (PASO A PASO) --- */
+.wizard-container {
+    max-width: 700px;
+    margin: 0 auto;
+    background: white;
+    min-height: 90vh;
+    box-shadow: 0 0 20px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+}
+
+.wizard-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.btn-back {
+    background: none;
+    border: none;
+    color: #64748b;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 1rem;
+}
+
+.step-indicator {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+.step-content {
+    padding: 2rem;
+    animation: fadeIn 0.3s ease;
+    flex: 1; /* Para que ocupe el espacio disponible */
+}
+
+.step-content h2 {
+    font-size: 1.5rem;
+    color: #0f172a;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.highlight { color: #0c4760; }
+
+/* Grid de Tarjetas Profesionales */
+.grid-pro {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+.card-pro {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.card-pro:hover {
+    border-color: #0c4760;
+    background: #f8fafc;
+    transform: translateX(5px);
+}
+
+.card-icon {
+    font-size: 1.5rem;
+    color: #0c4760;
+    background: #e0f2fe;
+    width: 45px;
+    height: 45px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.card-info h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: #1e293b;
+}
+.card-info span {
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+/* Checklist Pro (Paso 3) */
+.form-header-pro {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+.badge-pro {
+    background: #f1f5f9;
+    padding: 0.3rem 0.8rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+/* Fila de Pregunta */
+.question-row-pro {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.q-number {
+    font-weight: 700;
+    color: #cbd5e1;
+    font-size: 1.2rem;
+    min-width: 30px; /* Ancho fijo para alinear */
+}
+
+.q-text {
+    flex: 1;
+    font-size: 1rem;
+    color: #334155;
+    line-height: 1.4;
+}
+
+.btn-option {
+    border: 1px solid #e2e8f0;
+    background: white;
+    padding: 0.6rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Centrar contenido */
+    gap: 5px;
+    transition: all 0.2s;
+    min-width: 80px; /* Ancho mínimo */
+}
+
+.btn-option.pass.selected {
+    background: #16a34a;
+    color: white;
+    border-color: #16a34a;
+}
+
+.btn-option.fail.selected {
+    background: #dc2626;
+    color: white;
+    border-color: #dc2626;
+}
+
+.q-actions { 
+    display: flex;
+    gap: 0.5rem; 
+}
+
+/* Evidencias */
+.evidence-section-pro {
+    margin-top: 2rem;
+    background: #f8fafc;
+    padding: 1.5rem;
+    border-radius: 8px;
+}
+
+.file-custom-label {
+    background: white;
+    border: 1px solid #cbd5e1;
+    padding: 0.8rem;
+    text-align: center;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #475569;
+    font-weight: 500;
+}
+
+.file-input-wrapper {
+    position: relative;
+    margin-bottom: 1rem;
+}
+.file-input-wrapper input {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.input-observaciones {
+    width: 100%;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0.8rem;
+    margin-top: 1rem;
+    font-family: inherit;
+}
+
+.btn-submit-pro {
+    width: 100%;
+    background: #0c4760;
+    color: white;
+    padding: 1rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 2rem;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.success-view {
+    text-align: center;
+    padding: 3rem;
+}
+.success-icon {
+    font-size: 4rem;
+    color: #10b981;
+    margin-bottom: 1rem;
+}
+
+/* --- ESTILOS BUSCADOR ACTIVO --- */
+.asset-search-container {
+    margin-bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+}
+
+.search-bar-large {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+}
+
+.search-icon-large {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    font-size: 1.2rem;
+}
+
+.search-bar-large input {
+    width: 100%;
+    padding: 1rem 1rem 1rem 3rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background-color: #f8fafc;
+}
+
+.search-bar-large input:focus {
+    border-color: #0c4760;
+    background-color: white;
+    box-shadow: 0 4px 12px rgba(12, 71, 96, 0.1);
+}
+
+.category-tabs {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.cat-tab {
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    background-color: white;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cat-tab:hover { background-color: #f1f5f9; color: #0c4760; }
+.cat-tab.active {
+    background-color: #0c4760;
+    color: white;
+    border-color: #0c4760;
+    box-shadow: 0 2px 5px rgba(12, 71, 96, 0.2);
+}
+
+/* Tarjetas de Activo Modernas */
+.card-asset-modern {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.card-asset-modern:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: #0c4760;
+}
+
+.card-asset-modern::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #0c4760, #0ea5e9);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+.card-asset-modern:hover::before { opacity: 1; }
+
+.card-asset-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.asset-icon-circle {
+    width: 45px;
+    height: 45px;
+    background-color: #e0f2fe;
+    color: #0369a1;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+}
+
+.asset-code-badge {
+    background-color: #f1f5f9;
+    color: #475569;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.card-asset-body h3 {
+    margin: 0 0 0.3rem 0;
+    font-size: 1.1rem;
+    color: #1e293b;
+    font-weight: 700;
+}
+
+.asset-type {
+    font-size: 0.85rem;
+    color: #64748b;
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+
+.card-asset-footer {
+    margin-top: auto;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 0.8rem;
+}
+
+.asset-location {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.empty-search {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem;
+    color: #94a3b8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.selected-asset-summary {
+    background-color: #f0f9ff;
+    border-left: 4px solid #0c4760;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 4px;
+    color: #334155;
+}
+
+/* ==========================================================================
+   RESPONSIVE (MÓVIL Y TABLET < 900px)
+   ========================================================================== */
+@media (max-width: 900px) {
+    
+    /* --- DASHBOARD --- */
+    .colaborador-dashboard {
+        padding: 1rem;
+    }
+
+    /* Transformar botones gigantes de Cuadrado a Fila (Icono izq - Texto der) */
+    /* Apunta al contenedor div grid del JSX */
+    .colaborador-dashboard > div[style*="grid"] {
+        grid-template-columns: 1fr !important;
+        gap: 15px !important;
+        margin-bottom: 2rem !important;
+    }
+
+    .btn-big-action {
+        padding: 1.2rem;
+        flex-direction: row; /* Horizontal */
+        align-items: center;
+        justify-content: flex-start;
+        text-align: left;
+        border-radius: 12px;
+    }
+
+    .icon-circle {
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
+        margin-right: 15px; /* Espacio entre icono y texto */
+    }
+
+    .btn-big-action span {
+        font-size: 1.1rem; /* Texto un poco más pequeño */
+    }
+
+    /* --- WIZARD GENERAL --- */
+    .wizard-container {
+        box-shadow: none; /* Sin sombra en móvil para ganar espacio */
+        height: auto;
+        min-height: calc(100vh - 70px);
+    }
+
+    .wizard-header {
+        padding: 0.8rem 1rem;
+    }
+
+    .step-content {
+        padding: 1.5rem 1rem; /* Menos padding lateral */
+    }
+
+    .step-content h2 {
+        font-size: 1.3rem;
+    }
+
+    /* Grid de tarjetas (1 columna) */
+    .grid-pro {
+        grid-template-columns: 1fr; 
+    }
+
+    /* --- CHECKLIST (PREGUNTAS) --- */
+    .question-row-pro {
+        flex-direction: column; /* Pregunta arriba, botones abajo */
+        align-items: flex-start;
+        gap: 10px;
+        padding: 1.2rem 0;
+    }
+
+    .q-number {
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+        background: #e2e8f0;
+        padding: 2px 8px;
+        border-radius: 10px;
+    }
+
+    .q-text {
+        font-size: 1rem;
+        font-weight: 600; /* Más peso para leer mejor */
+        margin-bottom: 5px;
+        width: 100%;
+    }
+
+    /* Botones SÍ/NO ocupan el ancho completo */
+    .q-actions {
+        width: 100%;
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn-option {
+        flex: 1; /* 50% cada uno */
+        padding: 0.8rem;
+        font-size: 1rem;
+        justify-content: center;
+    }
+
+    /* Evidencia */
+    .evidence-section-pro {
+        padding: 1rem;
+    }
+}

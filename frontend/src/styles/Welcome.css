@@ -1,0 +1,125 @@
+/* frontend/src/styles/Welcome.css */
+
+.welcome-container {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f8fafc; /* Fondo gris muy claro */
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    padding: 20px;
+}
+
+.welcome-content {
+    width: 100%;
+    max-width: 900px;
+    text-align: center;
+}
+
+/* HEADER Y LOGO */
+.welcome-logo {
+    max-width: 220px;
+    margin-bottom: 2rem;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+}
+
+.welcome-title {
+    font-size: 2.2rem;
+    color: #0c4760; /* Tu azul corporativo */
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+.welcome-subtitle {
+    font-size: 1.1rem;
+    color: #64748b;
+    margin-bottom: 2rem;
+}
+
+.welcome-instruction {
+    color: #475569;
+    margin-bottom: 2rem;
+}
+
+/* GRID DE TARJETAS */
+.welcome-grid {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.welcome-card {
+    background: white;
+    padding: 40px 30px;
+    border-radius: 16px;
+    width: 260px;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.welcome-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border-color: #e2e8f0;
+}
+
+/* ICONOS */
+.card-icon-wrapper {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    width: 70px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.icon-admin { color: #0c4760; background-color: #f0f9ff; }
+.icon-collab { color: #0ea5e9; background-color: #e0f2fe; }
+.icon-kiosco { color: #16a34a; background-color: #dcfce7; } /* Verde para capacitación */
+
+.welcome-card:hover .icon-admin { background-color: #0c4760; color: white; }
+.welcome-card:hover .icon-collab { background-color: #0ea5e9; color: white; }
+.welcome-card:hover .icon-kiosco { background-color: #16a34a; color: white; }
+
+/* TEXTOS TARJETAS */
+.welcome-card h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.5rem;
+}
+
+.welcome-card p {
+    font-size: 0.9rem;
+    color: #64748b;
+    line-height: 1.4;
+}
+
+/* FOOTER */
+.welcome-footer {
+    margin-top: 4rem;
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .welcome-grid {
+        flex-direction: column;
+        align-items: center;
+    }
+    .welcome-card {
+        width: 100%;
+        max-width: 300px;
+    }
+}

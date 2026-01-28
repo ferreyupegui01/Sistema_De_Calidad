@@ -1,0 +1,94 @@
+/* frontend/src/styles/Designer.css */
+
+.designer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr; /* El constructor es más ancho que la asignación */
+    gap: 2rem;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .designer-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.section-card {
+    background: white;
+    padding: 2rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    border: 1px solid #e2e8f0;
+    margin-bottom: 2rem;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    color: var(--color-primary);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 2px solid #f1f5f9;
+    padding-bottom: 0.5rem;
+}
+
+/* Lista de Preguntas */
+.questions-list {
+    margin-top: 1rem;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.question-item {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.8rem;
+    align-items: center;
+}
+
+.question-input {
+    flex: 1;
+    padding: 0.6rem;
+    border: 1px solid #cbd5e1;
+    border-radius: var(--radius);
+    font-size: 0.95rem;
+}
+
+.btn-remove {
+    background: #fee2e2;
+    color: #ef4444;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.btn-remove:hover {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-add-question {
+    background: #e0f2fe;
+    color: #0284c7;
+    width: 100%;
+    padding: 0.8rem;
+    border-radius: var(--radius);
+    font-weight: 600;
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-add-question:hover {
+    background: #0284c7;
+    color: white;
+}

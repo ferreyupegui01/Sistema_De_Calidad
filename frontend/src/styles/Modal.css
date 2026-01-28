@@ -1,0 +1,260 @@
+/* frontend/src/styles/Modal.css */
+
+/* --- FONDO OSCURO (OVERLAY) --- */
+.modal-overlay {
+    position: fixed;
+    top: 0; 
+    left: 0;
+    width: 100vw; 
+    height: 100vh;
+    background-color: rgba(15, 23, 42, 0.65); /* Oscuro elegante (Slate-900) */
+    backdrop-filter: blur(4px); /* Desenfoque del fondo */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000; /* Encima del Sidebar (1000), debajo de Alertas (200000) */
+    padding: 1rem; /* Margen de seguridad en móviles */
+    opacity: 0;
+    animation: fadeInOverlay 0.3s forwards;
+}
+
+@keyframes fadeInOverlay {
+    to { opacity: 1; }
+}
+
+/* --- CAJA DEL MODAL --- */
+.modal-content {
+    background-color: #ffffff;
+    padding: 0; 
+    border-radius: 16px; /* Más redondeado */
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    width: 100%;
+    max-width: 600px; /* Ancho máximo en PC */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    max-height: 90vh; /* Nunca más alto que el 90% de la pantalla */
+    transform: scale(0.95);
+    animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalIn {
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* --- CABECERA --- */
+.modal-header {
+    background-color: #ffffff;
+    padding: 1.2rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0; /* Evita que se aplaste al hacer scroll */
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #0f172a;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.modal-close-button {
+    background: #f1f5f9;
+    border: none;
+    font-size: 1.2rem;
+    color: #64748b;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.modal-close-button:hover { 
+    background-color: #e2e8f0;
+    color: #ef4444; /* Rojo al pasar el mouse */
+}
+
+/* --- CUERPO (SCROLLEABLE) --- */
+.modal-body {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    overflow-y: auto;
+    background-color: #ffffff;
+    /* Scrollbar fina para Webkit */
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+/* Inputs y Labels */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #334155;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    font-size: 0.95rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background-color: #f8fafc;
+    color: #0f172a;
+    outline: none;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    background-color: #ffffff;
+    border-color: #0c4760; /* Azul Corporativo */
+    box-shadow: 0 0 0 3px rgba(12, 71, 96, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Grilla para poner campos lado a lado (Nombre | Apellido) */
+.form-grid-row {
+    display: flex;
+    gap: 1rem;
+}
+.form-col-half { flex: 1; }
+
+/* Caja de Rol o Info Extra */
+.role-assignment-box {
+    background-color: #fffbeb;
+    border: 1px solid #fef3c7;
+    padding: 1rem;
+    border-radius: 8px;
+    color: #92400e;
+    font-size: 0.9rem;
+}
+
+/* --- FOOTER --- */
+.modal-footer {
+    padding: 1.2rem 1.5rem;
+    background-color: #f8fafc; /* Gris muy suave */
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    flex-shrink: 0;
+}
+
+.btn-secondary {
+    background-color: white;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    padding: 0.7rem 1.2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+.btn-secondary:hover {
+    background-color: #f1f5f9;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+.btn-primary-modal {
+    background-color: #0c4760;
+    color: white;
+    border: none;
+    padding: 0.7rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    box-shadow: 0 4px 6px rgba(12, 71, 96, 0.2);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-primary-modal:hover {
+    background-color: #09425a;
+}
+.btn-primary-modal:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* ==========================================================================
+   RESPONSIVE (MÓVIL Y TABLET < 768px)
+   ========================================================================== */
+@media (max-width: 768px) {
+    /* 1. Ajuste general del modal */
+    .modal-content {
+        max-width: 100%; /* Ocupa todo el ancho disponible */
+        height: auto;
+        max-height: 95vh; /* Casi toda la altura */
+        border-radius: 12px;
+    }
+
+    /* 2. Cabecera más compacta */
+    .modal-header {
+        padding: 1rem;
+    }
+    .modal-header h2 {
+        font-size: 1.1rem;
+    }
+
+    /* 3. Cuerpo con menos padding */
+    .modal-body {
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    /* 4. ROMPER LAS FILAS (Grid a Columna) */
+    /* Los inputs lado a lado se ponen uno debajo del otro */
+    .form-grid-row {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    /* 5. Inputs con texto legible (evita zoom en iPhone) */
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 16px; /* Tamaño mínimo seguro para iOS */
+        padding: 0.8rem;
+    }
+
+    /* 6. Footer: Botones apilados para fácil toque */
+    .modal-footer {
+        flex-direction: column-reverse; /* El botón principal (Guardar) queda arriba visualmente o abajo según prefieras, reverse pone cancelar abajo */
+        gap: 0.8rem;
+        padding: 1rem;
+    }
+
+    .btn-secondary, 
+    .btn-primary-modal {
+        width: 100%; /* Botones de ancho completo */
+        padding: 0.9rem; /* Más altos para el dedo */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+    }
+}
+

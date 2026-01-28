@@ -1,0 +1,284 @@
+/* frontend/src/styles/Navbar.css */
+
+.navbar {
+    height: 70px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between; 
+    padding: 0 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 900;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+/* --- BOTÓN HAMBURGUESA --- */
+.btn-hamburger {
+    display: none; 
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: #0c4760;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.btn-hamburger:hover {
+    background-color: #f1f5f9;
+}
+
+/* --- ACCIONES DERECHA --- */
+.navbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-left: auto; 
+}
+
+.nav-action-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+/* Configurar Correo (Rojo) */
+.danger-link {
+    color: #dc2626;
+    font-weight: 600;
+}
+.danger-link svg { font-size: 1.1rem; }
+.danger-link:hover { opacity: 0.8; }
+
+/* Icono Campana */
+.icon-only {
+    color: #6b7280;
+    font-size: 1.2rem;
+    position: relative; /* Para el badge */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.icon-only:hover { color: #1f2937; }
+
+/* Badge Rojo (Contador) */
+.bell-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background-color: #ef4444;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 10px;
+    min-width: 16px;
+    text-align: center;
+    border: 1px solid white;
+}
+
+/* Separador Vertical */
+.nav-divider {
+    width: 1px;
+    height: 30px;
+    background-color: #e5e7eb;
+}
+
+/* Info Usuario */
+.user-info {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1.2;
+}
+
+.user-role { font-size: 0.75rem; color: #6b7280; }
+.user-name { font-size: 0.9rem; font-weight: 700; color: #0c4760; }
+
+/* Avatar */
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    background-color: #007bff;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 1.1rem;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.status-indicator {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    background-color: #dc2626;
+    border: 2px solid white;
+    border-radius: 50%;
+}
+
+/* Botón Cerrar Sesión */
+.btn-logout-nav {
+    background-color: transparent;
+    border: 1px solid #dc2626;
+    color: #dc2626;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.btn-logout-nav:hover {
+    background-color: #dc2626;
+    color: white;
+}
+
+/* --- DROPDOWN NOTIFICACIONES --- */
+.notif-dropdown {
+    position: absolute;
+    top: 50px; /* Un poco más abajo */
+    right: -10px;
+    width: 320px; /* Un poco más ancho */
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px -5px rgba(0,0,0,0.15);
+    z-index: 2000;
+    overflow: hidden;
+    animation: fadeIn 0.2s ease;
+}
+
+.notif-header {
+    padding: 12px 15px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: 700;
+    color: #0c4760;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+}
+
+.notif-list {
+    max-height: 350px;
+    overflow-y: auto;
+}
+
+.notif-empty {
+    padding: 30px 20px;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.9rem;
+}
+
+/* Ítem de Notificación */
+.notif-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    gap: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+    position: relative; /* Clave para posicionar elementos dentro */
+    align-items: flex-start; /* Alinear arriba */
+}
+
+.notif-item:hover { background-color: #f0f9ff; }
+.notif-item:last-child { border-bottom: none; }
+
+.notif-danger { background-color: #fff1f2; }
+.notif-danger:hover { background-color: #ffe4e6; }
+
+.notif-icon {
+    margin-top: 2px;
+    color: #0c4760;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+.notif-danger .notif-icon { color: #ef4444; }
+
+.notif-content {
+    flex: 1; /* Ocupa todo el espacio disponible */
+    padding-right: 5px; /* Espacio para no chocar con la X */
+}
+
+.notif-title {
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #1e293b;
+    margin-bottom: 2px;
+    line-height: 1.3;
+}
+
+.notif-msg {
+    font-size: 0.8rem;
+    color: #64748b;
+    line-height: 1.3;
+    margin-bottom: 4px;
+}
+
+.notif-date {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    text-align: right;
+}
+
+/* --- BOTÓN ELIMINAR (LA 'X') --- */
+.btn-delete-notif {
+    background: transparent;
+    border: none;
+    color: #94a3b8; /* Gris visible */
+    cursor: pointer;
+    padding: 4px; /* Área de toque */
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem; /* Tamaño de la X */
+    transition: all 0.2s;
+    flex-shrink: 0; /* Que no se aplaste */
+    margin-top: -2px; /* Alineación fina */
+}
+
+.btn-delete-notif:hover {
+    color: #ef4444; /* Rojo al pasar el mouse */
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+    .navbar { padding: 0 1rem; }
+    .btn-hamburger { display: block; }
+    .navbar-actions { margin-left: 0; gap: 0.8rem; }
+    .hide-on-mobile { display: none; }
+    .user-info { display: none; }
+    .nav-divider { display: none; }
+    
+    /* Dropdown ajustado a móvil */
+    .notif-dropdown {
+        position: fixed; /* Fijo en pantalla */
+        top: 60px;
+        left: 10px;
+        right: 10px;
+        width: auto; /* Ancho automático */
+    }
+}

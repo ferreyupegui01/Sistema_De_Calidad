@@ -1,0 +1,200 @@
+/* frontend/src/styles/ModalDetallePeso.css */
+
+/* --- 1. SECCIÓN DE INFORMACIÓN GENERAL --- */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.info-card {
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    transition: transform 0.2s;
+}
+
+.info-card:hover {
+    border-color: #cbd5e1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.info-label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #94a3b8;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    display: block;
+    letter-spacing: 0.5px;
+}
+
+.info-value {
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 0.95rem;
+}
+
+.info-value.highlight {
+    color: #0c4760;
+}
+
+/* --- 2. CONTENEDOR DE LA GRÁFICA --- */
+.chart-container {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 20px;
+    height: 320px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+.chart-title {
+    margin: 0;
+    color: #0c4760;
+    font-size: 1rem;
+}
+
+/* --- 3. PARÁMETROS TÉCNICOS --- */
+.params-container {
+    background: #f0f9ff;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid #bae6fd;
+    margin-bottom: 20px;
+}
+
+.params-title {
+    margin: 0 0 10px 0;
+    color: #0369a1;
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.params-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 15px;
+    font-size: 0.9rem;
+    color: #334155;
+}
+
+/* --- 4. CONFIGURACIÓN DEL REPORTE (ACORDEÓN) --- */
+.config-container {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: white;
+    margin-bottom: 20px;
+}
+
+.config-header-toggle {
+    padding: 12px 20px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8fafc;
+    transition: background 0.2s;
+}
+
+.config-header-toggle:hover {
+    background: #f1f5f9;
+}
+
+.config-header-toggle.open {
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.config-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: #475569;
+    font-size: 0.9rem;
+}
+
+.config-body {
+    padding: 20px;
+    background: white;
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* --- TEXTOS Y VALORES ESPECIALES --- */
+.text-approved {
+    color: #10b981; /* Verde */
+}
+.text-rejected {
+    color: #ef4444; /* Rojo */
+}
+
+/* frontend/src/styles/ModalDetallePeso.css */
+
+/* ... (mantén tus estilos anteriores de info-grid, chart, etc.) ... */
+
+/* --- ESTRUCTURA RÍGIDA PARA EL SCROLL (FIX) --- */
+
+/* 1. El contenedor blanco principal */
+.modal-content-fixed {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100%;
+    max-width: 900px;
+    
+    /* ALTURA FORZADA: Esto es lo que obliga al scroll a aparecer */
+    height: 90vh !important; 
+    max-height: 90vh !important;
+    
+    background-color: white;
+    border-radius: 12px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden !important; /* Corta lo que sobre */
+    position: relative;
+}
+
+/* 2. El encabezado (No se mueve) */
+.modal-header-fixed {
+    flex: 0 0 auto; /* No crecer, no encoger */
+    padding: 15px 20px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    z-index: 10;
+}
+
+/* 3. El cuerpo (ESTE ES EL QUE HACE SCROLL) */
+.modal-body-scrollable {
+    flex: 1 1 auto; /* Crece para ocupar todo el espacio disponible */
+    overflow-y: auto !important; /* Scroll vertical OBLIGATORIO */
+    overflow-x: hidden;
+    padding: 20px;
+    background-color: #f8fafc;
+    
+    /* Fix para navegadores que calculan mal el flex */
+    min-height: 0; 
+}
+
+/* 4. El pie de página (No se mueve) */
+.modal-footer-fixed {
+    flex: 0 0 auto; /* No crecer, no encoger */
+    padding: 15px 20px;
+    border-top: 1px solid #e2e8f0;
+    background: white;
+    display: flex;
+    justify-content: space-between;
+    z-index: 10;
+}

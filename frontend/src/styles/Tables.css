@@ -1,0 +1,141 @@
+/* frontend/src/styles/Tables.css */
+
+/* --- CABECERA DE PÁGINA --- */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap; /* Permite que los elementos bajen si no caben */
+    gap: 1rem; /* Espacio entre título y botón */
+}
+
+.page-title {
+    font-size: 1.8rem;
+    color: #000000;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin: 0;
+    border: none;
+    line-height: 1.2;
+}
+
+/* --- CONTENEDOR DE LA TABLA --- */
+.table-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    border: 1px solid #e2e8f0;
+    overflow: hidden; /* Oculta bordes rectos */
+    overflow-x: auto; /* IMPORTANTE: Permite scroll horizontal en móvil */
+    width: 100%;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    white-space: nowrap; /* Evita que el texto se parta en líneas extrañas */
+}
+
+/* --- CABECERA DE TABLA --- */
+.data-table th {
+    background-color: #f8fafc; /* Gris muy claro */
+    color: #475569; /* Gris oscuro para el encabezado */
+    font-weight: 700;
+    padding: 1.2rem 1.5rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+/* --- CELDAS --- */
+.data-table td {
+    padding: 1.2rem 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1e293b; /* Negro suave */
+    font-size: 0.9rem;
+    vertical-align: middle;
+}
+
+/* Fila Hover */
+.data-table tr {
+    transition: background-color 0.15s ease;
+}
+.data-table tr:hover {
+    background-color: #f8fafc;
+}
+
+/* --- BADGES (ETIQUETAS DE ESTADO) --- */
+.badge {
+    padding: 0.35rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1;
+    white-space: nowrap; /* Mantiene la etiqueta en una línea */
+}
+
+.badge-success {
+    background-color: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.badge-danger {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.badge-warning {
+    background-color: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #fdba74;
+}
+
+/* ==========================================================================
+   RESPONSIVE (MÓVIL Y TABLET < 900px)
+   ========================================================================== */
+@media (max-width: 900px) {
+    
+    /* 1. Ajuste de Cabecera */
+    .page-header {
+        flex-direction: column; /* Apilar verticalmente */
+        align-items: flex-start; /* Alinear a la izquierda */
+        gap: 15px;
+        margin-bottom: 1.5rem;
+    }
+
+    .page-title {
+        font-size: 1.5rem; /* Título un poco más pequeño */
+    }
+
+    /* El botón de acción (ej: Nuevo Usuario) ocupará todo el ancho para fácil acceso */
+    .page-header button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* 2. Ajuste de Tabla */
+    .table-container {
+        /* Borde más sutil en móvil */
+        border-radius: 8px; 
+    }
+
+    .data-table {
+        /* Forzamos un ancho mínimo para que las columnas no se aplasten.
+           Esto activa el scroll horizontal del .table-container */
+        min-width: 800px; 
+    }
+
+    /* Reducimos el padding para que quepa más info en pantallas medianas */
+    .data-table th, 
+    .data-table td {
+        padding: 1rem 1rem; 
+    }
+}

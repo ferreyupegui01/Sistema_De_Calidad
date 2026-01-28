@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import { FaTrash, FaPlus, FaSave, FaArrowLeft, FaCheckCircle, FaTimesCircle, FaBan, FaInfoCircle } from 'react-icons/fa';
-import { API_URL, getAuthHeaders } from '../../services/api';
+// 1. Usamos apiFetch en lugar de importar API_URL y headers sueltos
+import { apiFetch } from '../../services/api';
 import { getListasExternas } from '../../services/externosService';
 import '../../styles/Dashboard.css';
 
@@ -148,30 +149,24 @@ const AuditoriaProveedor = ({ onCancel, onSaveSuccess }) => {
         formData.append('items', JSON.stringify(items));
 
         try {
-            const headers = getAuthHeaders();
-            delete headers['Content-Type']; 
-
-            const res = await fetch(`${API_URL}/proveedores`, {
+            // --- CORRECCIÓN CLAVE: USAMOS apiFetch ---
+            // apiFetch maneja el token, la URL base y detecta que es FormData automáticamente
+            await apiFetch('/proveedores', {
                 method: 'POST',
-                headers: headers, 
                 body: formData
             });
 
-            if (res.ok) {
-                Swal.fire({
-                    title: 'Guardado', 
-                    text: `Auditoría registrada con concepto: ${resultados.concepto}`, 
-                    icon: 'success',
-                    confirmButtonColor: CORPORATE_BLUE
-                });
-                onSaveSuccess();
-            } else {
-                const errData = await res.json();
-                Swal.fire('Error', errData.msg || 'No se pudo guardar la auditoría', 'error');
-            }
+            Swal.fire({
+                title: 'Guardado', 
+                text: `Auditoría registrada con concepto: ${resultados.concepto}`, 
+                icon: 'success',
+                confirmButtonColor: CORPORATE_BLUE
+            });
+            onSaveSuccess();
+
         } catch (error) {
             console.error(error);
-            Swal.fire('Error', 'Fallo de conexión', 'error');
+            Swal.fire('Error', error.message || 'Fallo de conexión', 'error');
         }
     };
 
@@ -240,8 +235,6 @@ const AuditoriaProveedor = ({ onCancel, onSaveSuccess }) => {
                         <div className="form-group"><label>Ciudad</label><input className="form-control" value={header.ciudad} onChange={e=>setHeader({...header, ciudad:e.target.value})} /></div>
                         <div className="form-group"><label>Producto / Insumo</label><input className="form-control" value={header.producto} onChange={e=>setHeader({...header, producto:e.target.value})} /></div>
                         <div className="form-group"><label>Registro Sanitario</label><input className="form-control" value={header.registroSanitario} onChange={e=>setHeader({...header, registroSanitario:e.target.value})} /></div>
-                        
-                        {/* CAMPOS ELIMINADOS DE AQUÍ: Objeto Contrato, Fichas, Certificaciones */}
                      </div>
                 </div>
 
@@ -325,7 +318,6 @@ const AuditoriaProveedor = ({ onCancel, onSaveSuccess }) => {
                                 <span>{'>'} 85%</span> <span style={{color:'#86efac', fontWeight:'bold'}}>Favorable</span>
                             </div>
                         </div>
-                        {/* -------------------------------------- */}
 
                         <button type="submit" className="btn-primary" style={{marginTop:'25px', background:'white', color: CORPORATE_BLUE, border:'none', width:'100%', fontWeight:'bold', padding:'12px'}}>
                             <FaSave style={{marginRight:'5px'}}/> GUARDAR AUDITORÍA

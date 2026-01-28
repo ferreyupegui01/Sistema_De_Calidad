@@ -1,6 +1,12 @@
 import { getConnection, sql } from '../config/db.js';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 
-// Helper para decimales seguros (evita errores de SQL con strings)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Helper para decimales seguros
 const safeDecimal = (val) => {
     if (!val) return 0;
     const num = parseFloat(val);
@@ -10,11 +16,7 @@ const safeDecimal = (val) => {
 export const getRecolecciones = async (req, res) => {
     try {
         const pool = await getConnection();
-        // Usamos SELECT directo si el SP no existe, o mantenemos tu SP si ya lo tienes
         const result = await pool.request().query("SELECT * FROM RecoleccionResiduos ORDER BY Fecha DESC");
-        // Si prefieres usar el SP, descomenta la siguiente línea y comenta la anterior:
-        // const result = await pool.request().execute('SP_GET_Recolecciones');
-        
         res.json(result.recordset);
     } catch (error) {
         console.error("Error al obtener recolecciones:", error);
@@ -24,18 +26,17 @@ export const getRecolecciones = async (req, res) => {
 
 export const createRecoleccion = async (req, res) => {
     try {
-        // Multer ya procesó el cuerpo, así que req.body tiene los datos de texto
         const { tipoMaterial, fecha, cantidad, cliente, peso } = req.body;
         
-        // Validación básica
         if (!tipoMaterial || !fecha || !cliente) {
             return res.status(400).json({ msg: 'Faltan campos obligatorios.' });
         }
 
-        // Si Multer guardó un archivo, su info está en req.file (NO en req.files)
+        // --- CORRECCIÓN HOSTINGER: RUTA RELATIVA ---
         let urlDoc = null;
         if (req.file) {
-            urlDoc = `/uploads/${req.file.filename}`;
+            // Guardamos "uploads/archivo.pdf"
+            urlDoc = `uploads/${req.file.filename}`;
         }
 
         const pool = await getConnection();
@@ -45,18 +46,73 @@ export const createRecoleccion = async (req, res) => {
             .input('Cantidad', sql.Int, parseInt(cantidad) || 0) 
             .input('Cliente', sql.NVarChar, cliente)
             .input('Peso', sql.Decimal(10,2), safeDecimal(peso)) 
-            .input('Url_Documento', sql.NVarChar, urlDoc) // Guardamos la URL
+            .input('Url_Documento', sql.NVarChar, urlDoc) 
             .query(`
                 INSERT INTO RecoleccionResiduos 
                 (TipoMaterial, Fecha, Cantidad, Cliente, Peso, Url_Documento)
                 VALUES 
                 (@TipoMaterial, @Fecha, @Cantidad, @Cliente, @Peso, @Url_Documento)
             `);
-            // Si prefieres usar SP, cambia .query(...) por .execute('SP_CREATE_Recoleccion')
 
         res.json({ msg: 'Registro creado exitosamente' });
     } catch (error) {
         console.error("Error al crear recolección:", error);
         res.status(500).json({ message: error.message || 'Error interno del servidor' });
+    }
+};
+
+// ==========================================
+// VER EVIDENCIA PMIR (STREAMING ROBUSTO)
+// ==========================================
+// ==========================================
+export const verEvidenciaPMIR = (req, res) => {
+    const { nombreArchivo } = req.params;
+
+    console.log(`🔍 [PMIR] Solicitando archivo: ${nombreArchivo}`);
+
+    // Limpieza básica de seguridad
+    if (!nombreArchivo || nombreArchivo.includes('..')) {
+        return res.status(400).json({ mensaje: 'Nombre de archivo inválido' });
+    }
+
+    const projectRoot = process.cwd(); 
+    
+    // Rutas posibles donde puede estar el archivo
+    const posiblesRutas = [
+        path.join(projectRoot, 'uploads', nombreArchivo),
+        path.join(projectRoot, 'backend', 'uploads', nombreArchivo),
+        path.join(__dirname, '../../uploads', nombreArchivo)
+    ];
+
+    let archivoEncontrado = null;
+
+    // Buscar en todas las rutas posibles
+    for (const ruta of posiblesRutas) {
+        if (fs.existsSync(ruta)) {
+            archivoEncontrado = ruta;
+            break;
+        }
+    }
+
+    if (archivoEncontrado) {
+        console.log(`✅ [PMIR] Archivo encontrado en: ${archivoEncontrado}`);
+        
+        // 1. Detectar extensión manualmente si no usas librerías
+        const ext = path.extname(archivoEncontrado).toLowerCase();
+        let contentType = 'application/octet-stream'; // Por defecto
+
+        if (ext === '.pdf') contentType = 'application/pdf';
+        else if (ext === '.jpg' || ext === '.jpeg') contentType = 'image/jpeg';
+        else if (ext === '.png') contentType = 'image/png';
+
+        // 2. Establecer cabeceras para que el navegador sepa qué hacer
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Disposition', `inline; filename="${nombreArchivo}"`); // 'inline' para ver, 'attachment' para descargar
+
+        // 3. Enviar archivo
+        res.sendFile(archivoEncontrado);
+    } else {
+        console.error(`❌ [PMIR] Archivo NO encontrado. Buscado en:`, posiblesRutas);
+        res.status(404).json({ mensaje: 'Documento no encontrado en el servidor' });
     }
 };

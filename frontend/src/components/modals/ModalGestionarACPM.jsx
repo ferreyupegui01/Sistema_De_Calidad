@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
+// Usamos manageACPM unificado (asegúrate de que tu servicio acpmService soporte FormData, lo veremos luego)
 import { manageACPM } from '../../services/acpmService';
-import { uploadFile } from '../../services/specializedService'; 
 import '../../styles/Modal.css';
 import { 
     FaCheckCircle, FaExclamationCircle, FaPaperPlane, 
@@ -9,12 +9,14 @@ import {
 } from 'react-icons/fa';
 
 const ModalGestionarACPM = ({ isOpen, onClose, acpm, onSuccess }) => {
+    // --- ESTADOS ---
     const [estado, setEstado] = useState('');
     const [comentarios, setComentarios] = useState('');
-    const [urlEvidencia, setUrlEvidencia] = useState('');
-    const [archivo, setArchivo] = useState(null);
+    const [urlEvidencia, setUrlEvidencia] = useState(''); // Para links externos (Drive, etc.)
+    const [archivo, setArchivo] = useState(null); // Para archivos locales (Fotos/PDF)
     const [loading, setLoading] = useState(false);
 
+    // --- EFECTO: CARGAR DATOS AL ABRIR ---
     useEffect(() => {
         if (acpm && isOpen) {
             setEstado(acpm.Estado || 'Abierta');
@@ -26,11 +28,12 @@ const ModalGestionarACPM = ({ isOpen, onClose, acpm, onSuccess }) => {
 
     if (!isOpen || !acpm) return null;
 
+    // --- MANEJADORES ---
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
             setArchivo(file);
-            setUrlEvidencia(''); 
+            setUrlEvidencia(''); // Si el usuario sube un archivo, limpiamos el campo de URL externa
         }
     };
 
@@ -39,18 +42,10 @@ const ModalGestionarACPM = ({ isOpen, onClose, acpm, onSuccess }) => {
         setLoading(true);
 
         try {
-            let finalUrl = urlEvidencia;
-            if (archivo) {
-                const uploadResult = await uploadFile(
-                    archivo, 
-                    'ACPM', 
-                    'Evidencia', 
-                    `PlanAccion-${acpm.ID_ACPM}-Cierre`
-                );
-                finalUrl = uploadResult.url; 
-            }
-
-            if (estado === 'Cerrada' && (!finalUrl || finalUrl.trim() === '')) {
+            // 1. Validación: Si se cierra, DEBE haber evidencia
+            const tieneEvidencia = archivo || (urlEvidencia && urlEvidencia.trim() !== '');
+            
+            if (estado === 'Cerrada' && !tieneEvidencia) {
                 Swal.fire({
                     icon: 'warning',
                     title: 'Falta Evidencia',
@@ -61,22 +56,34 @@ const ModalGestionarACPM = ({ isOpen, onClose, acpm, onSuccess }) => {
                 return;
             }
 
-            await manageACPM(acpm.ID_ACPM, {
-                nuevoEstado: estado,
-                comentario: comentarios,
-                urlEvidencia: finalUrl,
-                usuario: 'Administrador' 
-            });
+            // 2. Preparar FormData (Unificado para texto y archivos)
+            const formData = new FormData();
+            formData.append('nuevoEstado', estado);
+            formData.append('comentario', comentarios);
+            formData.append('usuario', 'Administrador'); // Aquí podrías poner el usuario real del localStorage si quisieras
+            
+            if (archivo) {
+                // Si hay archivo físico
+                formData.append('evidencia', archivo);
+            } else if (urlEvidencia) {
+                // Si es solo link
+                formData.append('urlEvidencia', urlEvidencia);
+            }
 
+            // 3. Enviar al Backend
+            await manageACPM(acpm.ID_ACPM, formData);
+
+            // 4. Feedback
             Swal.fire({
                 title: '¡Gestión Guardada!',
-                text: `El plan de acción ha sido actualizado correctamente.`,
+                text: `El plan de acción ha sido actualizado correctamente a: ${estado}.`,
                 icon: 'success',
                 confirmButtonColor: '#0c4760',
                 timer: 2000
             });
-            onSuccess();
-            onClose();
+            
+            onSuccess(); // Recargar tabla padre
+            onClose();   // Cerrar modal
 
         } catch (error) {
             console.error(error);
@@ -86,6 +93,7 @@ const ModalGestionarACPM = ({ isOpen, onClose, acpm, onSuccess }) => {
         }
     };
 
+    // --- ESTILOS DINÁMICOS PARA BOTONES DE ESTADO ---
     const getStatusStyle = (currentStatus) => {
         if (estado === currentStatus) {
             switch (currentStatus) {
@@ -102,7 +110,7 @@ const ModalGestionarACPM = ({ isOpen, onClose, acpm, onSuccess }) => {
         <div className="modal-overlay">
             <div className="modal-content" style={{ maxWidth: '850px', flexDirection: 'row', overflow: 'hidden', height: '90vh' }}>
                 
-                {/* --- COLUMNA IZQUIERDA: RESUMEN (AHORA CON SCROLL) --- */}
+                {/* --- COLUMNA IZQUIERDA: RESUMEN DEL HALLAZGO --- */}
                 <div style={{ 
                     flex: '1', 
                     background: '#f8fafc', 
@@ -110,8 +118,8 @@ const ModalGestionarACPM = ({ isOpen, onClose, acpm, onSuccess }) => {
                     borderRight: '1px solid #e2e8f0', 
                     display: 'flex', 
                     flexDirection: 'column',
-                    overflowY: 'auto',  // <--- ¡ESTA ES LA CLAVE!
-                    maxHeight: '100%'   // Asegura que respete la altura del padre
+                    overflowY: 'auto', 
+                    maxHeight: '100%' 
                 }}>
                     <h3 style={{ color: '#0c4760', marginBottom: '1.5rem', borderBottom: '2px solid #e2e8f0', paddingBottom: '0.5rem' }}>
                         Detalle del Hallazgo
@@ -132,7 +140,7 @@ const ModalGestionarACPM = ({ isOpen, onClose, acpm, onSuccess }) => {
                             padding: '0.8rem', 
                             borderRadius: '6px', 
                             border: '1px solid #e2e8f0',
-                            whiteSpace: 'pre-wrap' // Para respetar los saltos de línea
+                            whiteSpace: 'pre-wrap' 
                         }}>
                             {acpm.Descripcion}
                         </div>
@@ -146,13 +154,13 @@ const ModalGestionarACPM = ({ isOpen, onClose, acpm, onSuccess }) => {
                     </div>
                 </div>
 
-                {/* --- COLUMNA DERECHA: FORMULARIO (TAMBIÉN CON SCROLL POR SI ACASO) --- */}
+                {/* --- COLUMNA DERECHA: FORMULARIO DE GESTIÓN --- */}
                 <div style={{ 
                     flex: '1.3', 
                     padding: '2rem', 
                     display: 'flex', 
-                    flexDirection: 'column',
-                    overflowY: 'auto', // <--- Agregado también aquí por seguridad
+                    flexDirection: 'column', 
+                    overflowY: 'auto', 
                     maxHeight: '100%' 
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -162,6 +170,7 @@ const ModalGestionarACPM = ({ isOpen, onClose, acpm, onSuccess }) => {
 
                     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', flex: 1 }}>
                         
+                        {/* SELECCIÓN DE ESTADO */}
                         <div className="form-group">
                             <label>Actualizar Estado</label>
                             <div style={{ display: 'flex', gap: '10px' }}>
@@ -170,7 +179,7 @@ const ModalGestionarACPM = ({ isOpen, onClose, acpm, onSuccess }) => {
                                         type="button"
                                         key={status}
                                         onClick={() => setEstado(status)}
-                                        style={{
+                                        style={{ 
                                             flex: 1, padding: '0.6rem', borderRadius: '6px', border: '1px solid',
                                             cursor: 'pointer', transition: 'all 0.2s', ...getStatusStyle(status)
                                         }}
@@ -181,6 +190,7 @@ const ModalGestionarACPM = ({ isOpen, onClose, acpm, onSuccess }) => {
                             </div>
                         </div>
 
+                        {/* COMENTARIOS */}
                         <div className="form-group">
                             <label>Comentarios de Avance / Cierre</label>
                             <textarea
@@ -192,12 +202,14 @@ const ModalGestionarACPM = ({ isOpen, onClose, acpm, onSuccess }) => {
                             ></textarea>
                         </div>
 
+                        {/* EVIDENCIA */}
                         <div className="form-group">
                             <label style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                                 Evidencia de Cierre
                                 {estado === 'Cerrada' && <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>(Obligatorio)</span>}
                             </label>
 
+                            {/* CAJA DE SUBIDA DE ARCHIVO */}
                             <div style={{ 
                                 border: '2px dashed #cbd5e1', borderRadius: '8px', padding: '1rem', 
                                 background: '#f8fafc', position: 'relative', textAlign: 'center' 
@@ -216,7 +228,13 @@ const ModalGestionarACPM = ({ isOpen, onClose, acpm, onSuccess }) => {
                                     <div style={{ color: '#0c4760', fontWeight: '500', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                                         <FaFileAlt size={20} />
                                         <span>{archivo.name}</span>
-                                        <button type="button" onClick={(e) => { e.stopPropagation(); setArchivo(null); }} style={{ marginLeft:'10px', color:'#ef4444', background:'none', border:'none', cursor:'pointer' }}>x</button>
+                                        <button 
+                                            type="button" 
+                                            onClick={(e) => { e.stopPropagation(); setArchivo(null); }} 
+                                            style={{ marginLeft:'10px', color:'#ef4444', background:'none', border:'none', cursor:'pointer' }}
+                                        >
+                                            x
+                                        </button>
                                     </div>
                                 ) : (
                                     <div style={{ color: '#64748b', fontSize: '0.9rem' }}>
@@ -226,6 +244,7 @@ const ModalGestionarACPM = ({ isOpen, onClose, acpm, onSuccess }) => {
                                 )}
                             </div>
 
+                            {/* INPUT DE URL (SOLO SI NO HAY ARCHIVO) */}
                             {!archivo && (
                                 <input
                                     type="text"
@@ -236,6 +255,7 @@ const ModalGestionarACPM = ({ isOpen, onClose, acpm, onSuccess }) => {
                                 />
                             )}
 
+                            {/* MENSAJE DE VALIDACIÓN VISUAL */}
                             {estado === 'Cerrada' && !archivo && !urlEvidencia && (
                                 <div style={{ fontSize: '0.8rem', color: '#ef4444', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                     <FaExclamationCircle /> Se requiere archivo o link para cerrar el plan.
@@ -243,6 +263,7 @@ const ModalGestionarACPM = ({ isOpen, onClose, acpm, onSuccess }) => {
                             )}
                         </div>
 
+                        {/* BOTONES DE ACCIÓN */}
                         <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '1rem', borderTop: '1px solid #f1f5f9' }}>
                             <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>
                                 Cancelar

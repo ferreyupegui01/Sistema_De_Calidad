@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import Swal from 'sweetalert2';
-import { API_URL } from '../../services/api';
+import { apiFetch } from '../../services/api'; // <--- Usamos nuestra api unificada
 import { FaTimes, FaSave, FaCamera, FaImages, FaInfoCircle, FaBuilding, FaBoxOpen, FaUserTie, FaTrash, FaPen, FaCheckSquare } from 'react-icons/fa';
 import '../../styles/Modal.css';
 
@@ -78,17 +77,17 @@ const ModalCreateActa = ({ isOpen, onClose, onSuccess }) => {
 
         const data = new FormData();
         Object.keys(formData).forEach(key => data.append(key, formData[key]));
+        
+        // Importante: El backend espera req.files (upload.array('fotos'))
         fotos.forEach(file => data.append('fotos', file));
 
         try {
-            const token = localStorage.getItem('token');
-            // Asegúrate que API_URL apunte correctamente a tu backend (ej: http://localhost:4000/api)
-            await axios.post(`${API_URL}/actas`, data, {
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'multipart/form-data'
-                }
+            // Usamos apiFetch: maneja URL base, token y detecta FormData automáticamente
+            await apiFetch('/actas', {
+                method: 'POST',
+                body: data
             });
+
             Swal.fire({
                 title: '¡Guardado!',
                 text: 'Acta de destrucción registrada correctamente.',
@@ -99,7 +98,7 @@ const ModalCreateActa = ({ isOpen, onClose, onSuccess }) => {
             onClose();
         } catch (error) {
             console.error(error);
-            Swal.fire('Error', 'No se pudo guardar el acta. Verifique la conexión.', 'error');
+            Swal.fire('Error', error.message || 'No se pudo guardar el acta.', 'error');
         } finally {
             setLoading(false);
         }

@@ -1,4 +1,11 @@
 import { getConnection, sql } from '../config/db.js';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+// Configuración de rutas seguras
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // --- OBTENER TODAS LAS EVALUACIONES ---
 export const getEvaluaciones = async (req, res) => {
@@ -38,7 +45,7 @@ export const getEvaluacionById = async (req, res) => {
     }
 };
 
-// --- CREAR NUEVA EVALUACIÓN (SIN SUBIDA DE ARCHIVO) ---
+// --- CREAR NUEVA EVALUACIÓN (SIN SUBIDA DE ARCHIVO INICIAL) ---
 export const createEvaluacion = async (req, res) => {
     // Extraemos solo los datos del formulario
     const { 
@@ -118,7 +125,7 @@ export const createEvaluacion = async (req, res) => {
     }
 };
 
-// --- SUBIR CARTA INVIMA POSTERIORMENTE (USADA DESDE LA TABLA) ---
+// --- SUBIR CARTA INVIMA POSTERIORMENTE ---
 export const uploadCartaInvima = async (req, res) => {
     const { id } = req.params;
     
@@ -126,7 +133,9 @@ export const uploadCartaInvima = async (req, res) => {
         return res.status(400).json({ msg: 'No se ha subido ningún archivo' });
     }
 
-    const urlCarta = `http://localhost:3000/uploads/${req.file.filename}`;
+    // --- CORRECCIÓN HOSTINGER: RUTA RELATIVA ---
+    // Guardamos 'uploads/archivo.pdf'
+    const urlCarta = `uploads/${req.file.filename}`;
 
     try {
         const pool = await getConnection();
@@ -139,5 +148,28 @@ export const uploadCartaInvima = async (req, res) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ msg: 'Error al actualizar la base de datos' });
+    }
+};
+
+// ==========================================
+// NUEVO: VER CARTA INVIMA (STREAMING)
+// ==========================================
+export const verCartaInvima = async (req, res) => {
+    const { nombreArchivo } = req.params;
+
+    // Validación de seguridad
+    if (!nombreArchivo || nombreArchivo.includes('..') || nombreArchivo.includes('/') || nombreArchivo.includes('\\')) {
+        return res.status(400).json({ mensaje: 'Nombre de archivo inválido' });
+    }
+
+    // Ruta física
+    const rutaFisica = path.resolve(__dirname, '../uploads', nombreArchivo);
+
+    if (fs.existsSync(rutaFisica)) {
+        res.setHeader('Content-Type', 'application/pdf'); // Asumimos PDF generalmente
+        res.setHeader('Content-Disposition', `inline; filename="${nombreArchivo}"`);
+        res.sendFile(rutaFisica);
+    } else {
+        res.status(404).json({ mensaje: 'Archivo no encontrado en el servidor' });
     }
 };

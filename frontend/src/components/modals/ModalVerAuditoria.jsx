@@ -2,15 +2,35 @@ import React from 'react';
 import '../../styles/Modal.css';
 import { 
     FaTimes, FaExternalLinkAlt, FaFileDownload, FaCalendarAlt, 
-    FaUserTie, FaBuilding, FaClipboardList, FaInfoCircle, FaUserEdit 
+    FaUserTie, FaBuilding, FaClipboardList, FaInfoCircle, FaUserEdit, FaTimesCircle
 } from 'react-icons/fa';
-import { API_URL } from '../../services/api';
+// Importamos las utilidades de seguridad para evitar errores en Hostinger
+import { apiFetchBlob, extractFilename } from '../../services/api';
 
 const ModalVerAuditoria = ({ isOpen, onClose, auditoria }) => {
     if (!isOpen || !auditoria) return null;
 
-    // URL BASE DEL SERVIDOR para archivos
-    const SERVER_URL = API_URL.replace('/api', '');
+    // --- FUNCIÓN SEGURA PARA DESCARGAR EVIDENCIA ---
+    const handleDownloadEvidence = async () => {
+        if (!auditoria.Url_Evidencia) return;
+        
+        try {
+            const filename = extractFilename(auditoria.Url_Evidencia);
+            // Llamamos a la ruta segura que configuramos en el backend
+            const blob = await apiFetchBlob(`/auditorias/evidencia/${filename}`);
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error("Error descargando evidencia:", error);
+            
+            // Fallback: Si es un link externo (ej: Google Drive), intentamos abrirlo directo
+            if (auditoria.Url_Evidencia.startsWith('http')) {
+                window.open(auditoria.Url_Evidencia, '_blank');
+            } else {
+                alert("No se pudo descargar el archivo adjunto. Verifique su conexión.");
+            }
+        }
+    };
 
     const labelStyle = {
         fontSize: '0.8rem',
@@ -117,28 +137,26 @@ const ModalVerAuditoria = ({ isOpen, onClose, auditoria }) => {
                         </div>
                     </div>
 
-                    {/* EVIDENCIA */}
+                    {/* EVIDENCIA (MODIFICADO PARA USAR EL BOTÓN SEGURO) */}
                     <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '1.5rem', marginTop: '1.5rem' }}>
                         <div style={labelStyle}>Evidencia Adjunta</div>
                         <div style={{ marginTop: '10px' }}>
                             {auditoria.Url_Evidencia ? (
-                                <a 
-                                    href={`${SERVER_URL}${auditoria.Url_Evidencia}`} 
-                                    target="_blank" 
-                                    rel="noreferrer"
-                                    className="btn-primary"
+                                <button 
+                                    onClick={handleDownloadEvidence}
                                     style={{ 
                                         textDecoration: 'none', display: 'inline-flex', alignItems: 'center', 
                                         gap: '8px', backgroundColor: '#0c4760', padding: '0.8rem 1.5rem',
-                                        borderRadius: '8px', color: 'white', fontSize: '0.9rem', width:'fit-content'
+                                        borderRadius: '8px', color: 'white', fontSize: '0.9rem', width:'fit-content',
+                                        border: 'none', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                                     }}
                                 >
                                     <FaFileDownload /> Descargar / Ver Archivo
                                     <FaExternalLinkAlt size={12} style={{ opacity: 0.7 }}/>
-                                </a>
+                                </button>
                             ) : (
                                 <span style={{ color: '#94a3b8', fontStyle: 'italic', display:'flex', alignItems:'center', gap:'5px' }}>
-                                    <FaTimes size={14}/> No se adjuntó evidencia digital.
+                                    <FaTimesCircle size={14}/> No se adjuntó evidencia digital.
                                 </span>
                             )}
                         </div>

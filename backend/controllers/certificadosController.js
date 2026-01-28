@@ -1,58 +1,48 @@
 import { getConnection, sql } from '../config/db.js';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+// Configuración de rutas seguras para manejo de archivos
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // =========================================================================
-// 1. LISTAR PLANTILLAS (Para el Diseñador y el Generador)
+// 1. LISTAR PLANTILLAS
 // =========================================================================
 export const listarPlantillas = async (req, res) => {
     try {
         const pool = await getConnection();
-        // Llamamos al SP que devuelve la estructura JSON reconstruida
         const result = await pool.request().execute('dbo.SP_ListarPlantillas_Relacional');
         
-        // PROCESAR RESULTADO PARA EL FRONTEND
         const plantillasMapeadas = result.recordset.map(row => {
             let estructura = [];
-            
             try {
                 const rawJson = row.Estructura_JSON_Reconstruida;
-                
                 if (rawJson) {
-                    // Si SQL devuelve string, lo parseamos. Si ya es objeto, lo usamos directo.
                     estructura = typeof rawJson === 'string' ? JSON.parse(rawJson) : rawJson;
 
                     if (Array.isArray(estructura)) {
                         estructura = estructura.map(seccion => {
-                            // A. Mapeo de Columnas para Tablas (Convertimos de Objeto a Array simple)
+                            // Limpieza de columnas y filas para evitar errores en frontend
                             if (seccion.tipo === 'tabla') {
                                 if (seccion.columnas_obj) {
                                     seccion.columnas = seccion.columnas_obj.map(c => c.Etiqueta);
-                                    delete seccion.columnas_obj; // Limpiamos para no enviar basura al front
+                                    delete seccion.columnas_obj;
                                 }
-
-                                // B. Mapeo de Filas (CRÍTICO: Asegurar que siempre sea un Array)
                                 if (typeof seccion.filas === 'string') {
-                                    try {
-                                        seccion.filas = JSON.parse(seccion.filas);
-                                    } catch (e) {
-                                        seccion.filas = []; 
-                                    }
+                                    try { seccion.filas = JSON.parse(seccion.filas); } catch (e) { seccion.filas = []; }
                                 }
-                                // Doble chequeo: si sigue sin ser array, lo forzamos
-                                if (!Array.isArray(seccion.filas)) {
-                                    seccion.filas = [];
-                                }
+                                if (!Array.isArray(seccion.filas)) seccion.filas = [];
                             }
-
-                            // C. Asegurar Booleanos correctos
                             seccion.fijo = Boolean(seccion.fijo);
-                            
                             return seccion;
                         });
                     }
                 }
             } catch (e) {
-                console.error("Error parseando JSON reconstruido en ID " + row.ID_Plantilla, e);
-                estructura = []; // Fallback seguro
+                console.error("Error parseando JSON ID " + row.ID_Plantilla, e);
+                estructura = [];
             }
 
             return {
@@ -71,7 +61,7 @@ export const listarPlantillas = async (req, res) => {
 };
 
 // =========================================================================
-// 2. GUARDAR PLANTILLA (Para el Diseñador)
+// 2. GUARDAR PLANTILLA
 // =========================================================================
 export const guardarPlantilla = async (req, res) => {
     const { nombre, estructura, id } = req.body;
@@ -91,41 +81,31 @@ export const guardarPlantilla = async (req, res) => {
 };
 
 // =========================================================================
-// 3. REGISTRAR GENERACIÓN (Con Detección Inteligente de Lote/Cliente)
+// 3. REGISTRAR GENERACIÓN (Optimizado para Hostinger)
 // =========================================================================
 export const registrarGeneracion = async (req, res) => {
     const archivo = req.file; 
-    
-    // Extraemos datos del request
     let { idPlantilla, lote, cliente, datos } = req.body;
 
-    // URL del PDF generado
-    let urlPDF = null;
-    if (archivo) urlPDF = `http://localhost:3000/uploads/${archivo.filename}`;
+    // --- CORRECCIÓN CRÍTICA: RUTA RELATIVA ---
+    // Guardamos solo el nombre del archivo si existe
+    let urlPDF = archivo ? `uploads/${archivo.filename}` : null;
 
     let listaValores = [];
     
     try {
         const dataObj = JSON.parse(datos); 
 
-        // --- LÓGICA INTELIGENTE: Auto-completar Lote y Cliente si vienen vacíos ---
-        // Esto busca dentro de los campos que llenó el usuario para encontrar el Lote
-        if (!lote || lote === 'undefined' || lote === 'null' || lote === 'N/A' || lote === 'S/L') {
-            lote = 'N/A'; // Reset
-            
-            // Buscamos dentro de la sección "form" del JSON
+        // --- LÓGICA INTELIGENTE PARA EXTRAER LOTE Y CLIENTE ---
+        if (!lote || ['undefined', 'null', 'N/A', 'S/L'].includes(lote)) {
+            lote = 'N/A';
             if (dataObj.form) {
                 for (const [seccion, contenido] of Object.entries(dataObj.form)) {
                     if (typeof contenido === 'object') {
-                        // Recorremos las claves (ej: "Lote del Producto", "Batch", "Referencia")
                         for (const [key, value] of Object.entries(contenido)) {
                             const k = key.toLowerCase();
-                            // Palabras clave para detectar LOTE
-                            if (k.includes('lote') || k.includes('batch') || k.includes('referencia') || k.includes('código')) {
-                                if (value && value.toString().trim() !== '') {
-                                    lote = value.toString(); // ¡Encontrado!
-                                    break; 
-                                }
+                            if (['lote', 'batch', 'referencia', 'código'].some(w => k.includes(w))) {
+                                if (value && String(value).trim() !== '') { lote = String(value); break; }
                             }
                         }
                     }
@@ -134,21 +114,15 @@ export const registrarGeneracion = async (req, res) => {
             }
         }
 
-        // Lo mismo para el CLIENTE
-        if (!cliente || cliente === 'undefined' || cliente === 'null' || cliente === 'General' || cliente === 'Varios') {
-            cliente = 'General'; // Reset
-
+        if (!cliente || ['undefined', 'null', 'General', 'Varios'].includes(cliente)) {
+            cliente = 'General';
             if (dataObj.form) {
                 for (const [seccion, contenido] of Object.entries(dataObj.form)) {
                     if (typeof contenido === 'object') {
                         for (const [key, value] of Object.entries(contenido)) {
                             const k = key.toLowerCase();
-                            // Palabras clave para detectar CLIENTE
-                            if (k.includes('cliente') || k.includes('empresa') || k.includes('señores') || k.includes('destinatario')) {
-                                if (value && value.toString().trim() !== '') {
-                                    cliente = value.toString(); // ¡Encontrado!
-                                    break;
-                                }
+                            if (['cliente', 'empresa', 'señores', 'destinatario'].some(w => k.includes(w))) {
+                                if (value && String(value).trim() !== '') { cliente = String(value); break; }
                             }
                         }
                     }
@@ -156,10 +130,9 @@ export const registrarGeneracion = async (req, res) => {
                 }
             }
         }
-        // --------------------------------------------------------------------------
+        // -------------------------------------------------------------
 
-        // Aplanar datos para guardar detalle completo en JSON (Para auditoría futura)
-        // 1. Datos de Formulario (Texto e Info)
+        // Aplanar datos para el historial detallado
         if (dataObj.form) {
             for (const [seccion, contenido] of Object.entries(dataObj.form)) {
                 if (typeof contenido === 'string') {
@@ -171,7 +144,6 @@ export const registrarGeneracion = async (req, res) => {
                 }
             }
         }
-        // 2. Datos de Tablas
         if (dataObj.tables) {
             for (const [seccion, filas] of Object.entries(dataObj.tables)) {
                 filas.forEach((filaObj, index) => {
@@ -183,39 +155,82 @@ export const registrarGeneracion = async (req, res) => {
         }
 
     } catch (e) {
-        console.error("Error procesando datos JSON en registrarGeneracion:", e);
-        return res.status(400).json({ mensaje: 'Error en formato de datos enviados.' });
+        console.error("Error procesando JSON:", e);
+        return res.status(400).json({ mensaje: 'Error en formato de datos.' });
     }
 
     try {
         const pool = await getConnection();
         await pool.request()
             .input('ID_Plantilla', sql.Int, idPlantilla)
-            .input('Lote', sql.NVarChar, lote)       // Dato detectado o 'N/A'
-            .input('Cliente', sql.NVarChar, cliente) // Dato detectado o 'General'
+            .input('Lote', sql.NVarChar, lote)
+            .input('Cliente', sql.NVarChar, cliente)
             .input('Usuario', sql.NVarChar, req.usuario.nombre)
-            .input('Url_PDF', sql.NVarChar, urlPDF)
+            .input('Url_PDF', sql.NVarChar, urlPDF) 
             .input('DatosJSON', sql.NVarChar, JSON.stringify(listaValores)) 
             .execute('dbo.SP_RegistrarCertificadoGenerado'); 
 
-        res.json({ mensaje: 'Certificado guardado y registrado correctamente en historial.' });
+        res.json({ mensaje: 'Certificado guardado y registrado.' });
     } catch (error) {
-        console.error("Error SQL al registrar generación:", error);
-        res.status(500).json({ mensaje: 'Error al registrar historial del certificado.' });
+        console.error("Error SQL:", error);
+        res.status(500).json({ mensaje: 'Error al registrar historial.' });
     }
 };
 
 // =========================================================================
-// 4. OBTENER HISTORIAL (Para la tabla de trazabilidad)
+// 4. OBTENER HISTORIAL
 // =========================================================================
 export const obtenerHistorial = async (req, res) => {
     try {
         const pool = await getConnection();
-        // Llama al SP actualizado que devuelve ID, Lote, Cliente, etc.
         const result = await pool.request().execute('dbo.SP_ListarCertificadosHistorial');
         res.json(result.recordset);
     } catch (error) {
-        console.error("Error obteniendo historial de certificados:", error);
         res.status(500).json({ mensaje: 'Error al obtener historial' });
+    }
+};
+
+// =========================================================================
+// 5. VER PDF CERTIFICADO (STREAMING ROBUSTO)
+// =========================================================================
+export const verCertificadoPDF = (req, res) => {
+    const { nombreArchivo } = req.params;
+
+    console.log(`🔍 [CERTIFICADOS] Buscando PDF: ${nombreArchivo}`);
+
+    // Seguridad básica
+    if (!nombreArchivo || nombreArchivo.includes('..') || nombreArchivo.includes('/') || nombreArchivo.includes('\\')) {
+        return res.status(400).json({ mensaje: 'Nombre de archivo inválido' });
+    }
+
+    const projectRoot = process.cwd();
+
+    // Estrategia de búsqueda múltiple (Igual que en los otros módulos)
+    const posiblesRutas = [
+        path.join(projectRoot, 'uploads', nombreArchivo),
+        path.join(projectRoot, 'backend', 'uploads', nombreArchivo),
+        path.resolve(__dirname, '../../uploads', nombreArchivo)
+    ];
+
+    let archivoEncontrado = null;
+
+    for (const ruta of posiblesRutas) {
+        if (fs.existsSync(ruta)) {
+            archivoEncontrado = ruta;
+            break;
+        }
+    }
+
+    if (archivoEncontrado) {
+        console.log(`✅ [CERTIFICADOS] Encontrado en: ${archivoEncontrado}`);
+        
+        // Headers para visualización correcta
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${nombreArchivo}"`);
+        
+        res.sendFile(archivoEncontrado);
+    } else {
+        console.error(`❌ [CERTIFICADOS] No encontrado. Buscado en:`, posiblesRutas);
+        res.status(404).json({ mensaje: 'El archivo del certificado no existe en el servidor.' });
     }
 };

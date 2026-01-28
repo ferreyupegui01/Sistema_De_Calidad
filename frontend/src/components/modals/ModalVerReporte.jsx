@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-// CORRECCIÓN: Importamos desde 'reportesService', no 'coreService'
 import { getReporteDetalle, verifyReporte } from '../../services/reportesService'; 
+// Importamos utilidades de seguridad
+import { apiFetchBlob, extractFilename } from '../../services/api';
 import '../../styles/Modal.css';
-import { FaTimes, FaClipboardList, FaCheck, FaTimesCircle, FaCamera, FaUser, FaCalendarAlt, FaIndustry, FaCheckDouble } from 'react-icons/fa';
+import { FaTimes, FaClipboardList, FaCheck, FaTimesCircle, FaCamera, FaUser, FaCalendarAlt, FaIndustry, FaCheckDouble, FaExternalLinkAlt } from 'react-icons/fa';
 import Swal from 'sweetalert2';
 
 const ModalVerReporte = ({ isOpen, onClose, reporte, onUpdate }) => {
@@ -21,7 +22,6 @@ const ModalVerReporte = ({ isOpen, onClose, reporte, onUpdate }) => {
     const cargarDetalle = async () => {
         setLoading(true);
         try {
-            // Ahora sí encontrará la función
             const data = await getReporteDetalle(reporte.ID_Reporte);
             setDetalles(data);
         } catch (error) {
@@ -48,6 +48,23 @@ const ModalVerReporte = ({ isOpen, onClose, reporte, onUpdate }) => {
             Swal.fire('Error', error.message, 'error');
         } finally {
             setVerificando(false);
+        }
+    };
+
+    // --- FUNCIÓN SEGURA PARA ABRIR EVIDENCIA ---
+    const handleVerEvidencia = async () => {
+        if (!reporte.Url_Evidencia) return;
+        
+        try {
+            const filename = extractFilename(reporte.Url_Evidencia);
+            // Usamos el endpoint seguro (Asumimos que la ruta es /reportes/evidencia/:nombre)
+            // Si no existe esa ruta específica en backend, usaremos la genérica luego
+            const blob = await apiFetchBlob(`/reportes/evidencia/${filename}`);
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error("Error al cargar evidencia:", error);
+            alert("No se pudo cargar el archivo adjunto. Verifique su conexión.");
         }
     };
 
@@ -151,14 +168,17 @@ const ModalVerReporte = ({ isOpen, onClose, reporte, onUpdate }) => {
                                     <strong style={{color:'#64748b', fontSize:'0.8rem', textTransform:'uppercase', display:'flex', alignItems:'center', gap:'5px'}}>
                                         <FaCamera/> Evidencia Adjunta:
                                     </strong>
-                                    <a 
-                                        href={reporte.Url_Evidencia} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        style={{display:'inline-block', marginTop:'5px', color:'#0c4760', textDecoration:'underline', fontSize:'0.9rem'}}
+                                    
+                                    <button 
+                                        onClick={handleVerEvidencia}
+                                        style={{
+                                            display:'inline-flex', alignItems:'center', gap:'5px', marginTop:'8px', 
+                                            color:'#0c4760', textDecoration:'none', fontSize:'0.9rem',
+                                            background:'none', border:'none', cursor:'pointer', fontWeight:'bold'
+                                        }}
                                     >
-                                        Ver fotografía / documento
-                                    </a>
+                                        Ver fotografía / documento <FaExternalLinkAlt size={12}/>
+                                    </button>
                                 </div>
                             )}
                         </div>

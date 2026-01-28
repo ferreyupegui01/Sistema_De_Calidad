@@ -1,5 +1,12 @@
 import { getConnection, sql } from '../config/db.js';
 import { registrarLog } from '../libs/logger.js';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+// Configuración de rutas
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ==========================================
 // 1. GESTIÓN DE CAPACITACIONES (MATERIAL)
@@ -10,7 +17,10 @@ export const crearCapacitacion = async (req, res) => {
     
     if (!req.file) return res.status(400).json({ mensaje: 'Debe subir un material (PDF/PPT)' });
     
-    const urlMaterial = `http://localhost:3000/uploads/${req.file.filename}`;
+    // Guardamos solo el nombre del archivo o ruta relativa simple
+    // Esto es clave para que funcione en cualquier entorno
+    const urlMaterial = `uploads/${req.file.filename}`;
+    
     const ext = req.file.filename.split('.').pop().toLowerCase();
     let tipoArchivo = 'OTRO';
     if (ext === 'pdf') tipoArchivo = 'PDF';
@@ -42,7 +52,6 @@ export const listarCapacitacionesAdmin = async (req, res) => {
     } catch (error) { res.status(500).json({ mensaje: 'Error al listar' }); }
 };
 
-// --- PARA EL KIOSCO (PÚBLICO) ---
 export const listarParaKiosco = async (req, res) => {
     try {
         const pool = await getConnection();
@@ -52,7 +61,7 @@ export const listarParaKiosco = async (req, res) => {
 };
 
 // ==========================================
-// 2. REPORTES AVANZADOS (DRILL-DOWN)
+// 2. REPORTES AVANZADOS
 // ==========================================
 
 export const obtenerResumenAdmin = async (req, res) => {
@@ -76,7 +85,7 @@ export const obtenerUsuariosPorCurso = async (req, res) => {
 
 export const obtenerHistorialUsuario = async (req, res) => {
     const { idEvaluacion } = req.params;
-    const { nombre } = req.query; // Se envía por query param ?nombre=Juan...
+    const { nombre } = req.query; 
     try {
         const pool = await getConnection();
         const result = await pool.request()
@@ -123,7 +132,6 @@ export const obtenerDetalleResultado = async (req, res) => {
     }
 };
 
-// [ACTUALIZADO] LISTAR PREGUNTAS (INCLUYE IMAGEN)
 export const listarPreguntas = async (req, res) => {
     const { idEvaluacion } = req.params;
     try {
@@ -136,7 +144,7 @@ export const listarPreguntas = async (req, res) => {
                 preguntasMap.set(row.ID_Pregunta_Eval, {
                     id: row.ID_Pregunta_Eval,
                     pregunta: row.Texto_Pregunta,
-                    imagen: row.Url_Imagen, // <--- CAMPO NUEVO
+                    imagen: row.Url_Imagen, 
                     opciones: []
                 });
             }
@@ -148,14 +156,12 @@ export const listarPreguntas = async (req, res) => {
     } catch (error) { res.status(500).json({ mensaje: 'Error al listar preguntas' }); }
 };
 
-// [ACTUALIZADO] AGREGAR PREGUNTA (SOPORTE IMAGEN)
 export const agregarPregunta = async (req, res) => {
-    // Al usar FormData, req.body trae los textos y req.file el archivo
     const { idEvaluacion, texto, opciones } = req.body;
     
     let urlImagen = null;
     if (req.file) {
-        urlImagen = `http://localhost:3000/uploads/${req.file.filename}`;
+        urlImagen = `uploads/${req.file.filename}`;
     }
 
     try {
@@ -163,8 +169,8 @@ export const agregarPregunta = async (req, res) => {
         await pool.request()
             .input('ID_Evaluacion', sql.Int, idEvaluacion)
             .input('TextoPregunta', sql.NVarChar, texto)
-            .input('Url_Imagen', sql.NVarChar, urlImagen) // <--- PARAMETRO NUEVO AL SP
-            .input('OpcionesJSON', sql.NVarChar, opciones) // Viene como string desde el FormData frontend
+            .input('Url_Imagen', sql.NVarChar, urlImagen) 
+            .input('OpcionesJSON', sql.NVarChar, opciones)
             .execute('dbo.SP_AgregarPreguntaEval');
             
         res.json({ mensaje: 'Pregunta agregada correctamente' });
@@ -181,4 +187,39 @@ export const eliminarPregunta = async (req, res) => {
         await pool.request().input('ID_Pregunta', sql.Int, id).execute('dbo.SP_EliminarPreguntaEvaluacion');
         res.json({ mensaje: 'Eliminada' });
     } catch (error) { res.status(500).json({ mensaje: 'Error' }); }
+};
+
+// ==========================================
+// 4. NUEVO ENDPOINT: STREAMING DE MATERIAL
+// ==========================================
+// Esta es la función clave para Hostinger
+export const streamMaterialCapacitacion = (req, res) => {
+    const { nombreArchivo } = req.params; // Asegúrate de que en la ruta se llame :nombreArchivo o :filename
+
+    // 1. Obtener la raíz del proyecto (donde ejecutas 'npm run dev')
+    const projectRoot = process.cwd(); 
+
+    // 2. Definir las posibles ubicaciones del archivo
+    // Esto cubre si está en una subcarpeta o en la raíz de uploads
+    const posiblesRutas = [
+        path.join(projectRoot, 'uploads', nombreArchivo),                          // Caso 1: backend/uploads/archivo.pdf
+        path.join(projectRoot, 'uploads', 'Capacitacion', nombreArchivo),          // Caso 2: backend/uploads/Capacitacion/archivo.pdf
+        path.join(projectRoot, 'backend', 'uploads', nombreArchivo),               // Caso 3: si ejecutas desde raíz del repo
+    ];
+
+    console.log(`🔍 [DEBUG] Buscando archivo: ${nombreArchivo}`);
+
+    // 3. Iterar y buscar
+    for (const ruta of posiblesRutas) {
+        if (fs.existsSync(ruta)) {
+            // console.log(`✅ Encontrado en: ${ruta}`);
+            return res.sendFile(ruta);
+        }
+    }
+
+    // 4. Si llegamos aquí, no existe
+    console.error(`❌ [ERROR] Archivo NO encontrado en ninguna ruta prevista.`);
+    console.error(`   Rutas intentadas:`, posiblesRutas);
+    
+    res.status(404).json({ mensaje: 'Archivo no encontrado en el servidor' });
 };

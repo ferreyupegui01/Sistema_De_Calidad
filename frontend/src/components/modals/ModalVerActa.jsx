@@ -1,33 +1,68 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Agregamos useEffect para cargar imágenes al abrir
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { FaTimes, FaFilePdf, FaBuilding, FaBoxOpen, FaUsers, FaInfoCircle, FaCamera, FaSignature, FaBarcode, FaCalendarAlt, FaCheckCircle } from 'react-icons/fa';
 import '../../styles/Modal.css';
-import { API_URL } from '../../services/api';
+import { API_URL, apiFetchBlob, extractFilename } from '../../services/api'; // Importamos las nuevas funciones
 import logoImg from '../../assets/logo_eltrece.png';
 
 const ModalVerActa = ({ isOpen, onClose, data }) => {
     const [generating, setGenerating] = useState(false);
+    // Estado para guardar las URLs temporales de las imágenes (blobs)
+    const [previewImages, setPreviewImages] = useState({});
+
+    const THEME_COLOR = '#0c4760';
+
+    // --- EFECTO: CARGAR IMÁGENES SEGURAS AL ABRIR ---
+    useEffect(() => {
+        if (isOpen && data) {
+            const loadImages = async () => {
+                const urls = [data.Url_Foto1, data.Url_Foto2, data.Url_Foto3, data.Url_Foto4].filter(Boolean);
+                const newPreviews = {};
+
+                for (const urlBD of urls) {
+                    try {
+                        const filename = extractFilename(urlBD);
+                        // Usamos el endpoint de streaming que creamos en el backend
+                        // endpoint: /actas/foto/:nombreArchivo
+                        const blob = await apiFetchBlob(`/actas/foto/${filename}`);
+                        newPreviews[urlBD] = URL.createObjectURL(blob);
+                    } catch (error) {
+                        console.error("Error cargando imagen segura:", error);
+                    }
+                }
+                setPreviewImages(newPreviews);
+            };
+            loadImages();
+        }
+        
+        // Limpieza de memoria al cerrar
+        return () => {
+            Object.values(previewImages).forEach(url => URL.revokeObjectURL(url));
+        };
+    }, [isOpen, data]);
+
 
     if (!isOpen || !data) return null;
 
-    const THEME_COLOR = '#0c4760';
-    const SERVER_URL = API_URL.replace('/api', '');
-
-    // --- FUNCIÓN IMÁGENES ---
-    const getImageData = async (url) => {
+    // --- FUNCIÓN IMÁGENES (ADAPTADA PARA PDF) ---
+    // Ahora usa las URLs blob que ya cargamos en el estado
+    const getImageData = async (urlBD) => {
         try {
-            const response = await fetch(url);
+            const blobUrl = previewImages[urlBD];
+            if (!blobUrl) return null;
+
+            const response = await fetch(blobUrl);
             const blob = await response.blob();
             return new Promise((resolve) => {
                 const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
+                reader.onloadend = () => resolve(reader.result); // Devuelve base64 para jsPDF
                 reader.readAsDataURL(blob);
             });
         } catch (error) { return null; }
     };
 
-    // --- GENERAR PDF ---
+    // --- GENERAR PDF (LÓGICA INTACTA, SOLO USA LA NUEVA getImageData) ---
     const generatePDF = async () => {
         setGenerating(true);
         const doc = new jsPDF();
@@ -138,33 +173,27 @@ const ModalVerActa = ({ isOpen, onClose, data }) => {
         currentY = doc.lastAutoTable.finalY + 8; // Espacio después de la tabla
 
         // ==========================================
-        //  MENSAJE SAAVE (MOVIDO AQUÍ)
+        //  MENSAJE SAAVE
         // ==========================================
         if (data.Aplica_Saave) {
             const textoSaave = data.Nota_Saave || "SAAVE 1370 Doc realizado por operaciones en sofsin";
             
-            // Dibujamos un pequeño fondo o solo texto
             doc.setFontSize(8);
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(0);
             
-            // Etiqueta
             doc.text("NOTA OFICIAL:", margins.left, currentY);
             
-            // Texto del SAAVE
             doc.setFont('helvetica', 'normal');
-            doc.setTextColor(50); // Un gris oscuro para diferenciarlo levemente
+            doc.setTextColor(50);
             const splitSaave = doc.splitTextToSize(textoSaave, contentWidth - 30);
             doc.text(splitSaave, margins.left + 30, currentY);
             
-            // Actualizamos la posición Y para que lo siguiente no se monte
             currentY += (splitSaave.length * 4) + 10;
-            
-            doc.setTextColor(0); // Volver a negro
+            doc.setTextColor(0);
         } else {
-            currentY += 5; // Un pequeño espacio extra si no hay nota
+            currentY += 5;
         }
-        // ==========================================
 
         // --- 4. TEXTO LEGAL ---
         doc.setFontSize(9);
@@ -182,22 +211,29 @@ const ModalVerActa = ({ isOpen, onClose, data }) => {
         doc.text('REGISTRO FOTOGRÁFICO:', margins.left, currentY);
         currentY += 5;
 
-        const photoUrls = [data.Url_Foto1, data.Url_Foto2, data.Url_Foto3, data.Url_Foto4].filter(Boolean).map(url => `${SERVER_URL}${url}`);
+        // Usamos las fotos de la DB para iterar
+        const photoUrlsBD = [data.Url_Foto1, data.Url_Foto2, data.Url_Foto3, data.Url_Foto4].filter(Boolean);
+        
         let xPos = margins.left;
         const gap = 5;
         const photoSize = (contentWidth - (gap * 3)) / 4;
 
+        // Iteramos 4 veces para mantener el layout
         for(let i = 0; i < 4; i++) {
             doc.setDrawColor(0);
             doc.rect(xPos, currentY, photoSize, photoSize); 
             
-            if (photoUrls[i]) {
+            // Si existe URL en BD
+            if (photoUrlsBD[i]) {
                 try {
-                    const base64Img = await getImageData(photoUrls[i]);
+                    // Llamamos a getImageData pasando la URL de BD
+                    const base64Img = await getImageData(photoUrlsBD[i]);
                     if (base64Img) {
                         doc.addImage(base64Img, 'JPEG', xPos + 1, currentY + 1, photoSize - 2, photoSize - 2);
                     }
-                } catch (err) {}
+                } catch (err) {
+                    console.error("Error al poner imagen en PDF", err);
+                }
             } else {
                 doc.setFontSize(7);
                 doc.setFont('helvetica', 'normal');
@@ -305,13 +341,18 @@ const ModalVerActa = ({ isOpen, onClose, data }) => {
                                 </div>
                             </div>
 
-                            {/* EVIDENCIAS */}
+                            {/* EVIDENCIAS (MODIFICADO PARA USAR previewImages) */}
                             <div style={{background:'white', padding:'20px', borderRadius:'8px', border:'1px solid #e2e8f0'}}>
                                 <h4 style={{marginTop:0, color: THEME_COLOR, borderBottom:'2px solid #f1f5f9', paddingBottom:'10px', marginBottom:'15px'}}>Evidencias</h4>
                                 <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(80px, 1fr))', gap:'10px'}}>
-                                    {[data.Url_Foto1, data.Url_Foto2, data.Url_Foto3, data.Url_Foto4].filter(Boolean).map((url, i) => (
-                                        <a key={i} href={`${SERVER_URL}${url}`} target="_blank" rel="noopener noreferrer" style={{display:'block', width:'100%', aspectRatio:'1/1', border:'1px solid #e2e8f0', borderRadius:'6px', overflow:'hidden'}}>
-                                            <img src={`${SERVER_URL}${url}`} alt={`Evidencia ${i+1}`} style={{width:'100%', height:'100%', objectFit:'cover'}} />
+                                    {[data.Url_Foto1, data.Url_Foto2, data.Url_Foto3, data.Url_Foto4].filter(Boolean).map((urlBD, i) => (
+                                        <a key={i} href={previewImages[urlBD]} target="_blank" rel="noopener noreferrer" style={{display:'block', width:'100%', aspectRatio:'1/1', border:'1px solid #e2e8f0', borderRadius:'6px', overflow:'hidden', cursor: 'zoom-in'}}>
+                                            {/* Usamos la URL temporal (blob) si existe, o un placeholder mientras carga */}
+                                            {previewImages[urlBD] ? (
+                                                <img src={previewImages[urlBD]} alt={`Evidencia ${i+1}`} style={{width:'100%', height:'100%', objectFit:'cover'}} />
+                                            ) : (
+                                                <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', background:'#f1f5f9', color:'#94a3b8', fontSize:'0.7rem'}}>Cargando...</div>
+                                            )}
                                         </a>
                                     ))}
                                     {![data.Url_Foto1, data.Url_Foto2, data.Url_Foto3, data.Url_Foto4].some(Boolean) && (

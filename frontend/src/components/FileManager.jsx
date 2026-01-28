@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { API_URL, getAuthHeaders } from '../services/api';
+// IMPORTANTE: Asegúrate de importar las utilidades de seguridad
+import { API_URL, getAuthHeaders, apiFetchBlob, extractFilename } from '../services/api';
 import Swal from 'sweetalert2';
 import { 
     FaFolder, FaFilePdf, FaFileWord, FaFileExcel, FaFileImage, FaFile, 
     FaHome, FaPlus, FaFileUpload, FaTrash, FaChevronRight, FaSearch, FaDownload,
-    FaFilePowerpoint, FaFileCode, FaFileVideo, FaFileAlt, FaSpinner, FaArrowLeft
+    FaFilePowerpoint, FaFileCode, FaFileVideo, FaFileAlt, FaSpinner, FaArrowLeft, FaEye
 } from 'react-icons/fa';
 import '../styles/Drive.css';
 
@@ -14,6 +15,9 @@ const FileManager = ({ initialFolderId, title, onClose }) => {
     const [breadcrumbs, setBreadcrumbs] = useState([]); 
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
+    
+    // Estado para feedback visual de carga al abrir archivos
+    const [viewingId, setViewingId] = useState(null);
 
     // Toast Config
     const Toast = Swal.mixin({
@@ -108,19 +112,50 @@ const FileManager = ({ initialFolderId, title, onClose }) => {
         }
     };
 
+    // --- DESCARGA SEGURA (Por ID) ---
     const handleDownload = async (e, idDoc, nombre) => {
         e.stopPropagation();
-        Toast.fire({ icon: 'info', title: 'Descargando...' });
+        Toast.fire({ icon: 'info', title: 'Iniciando descarga...' });
         try {
-            const token = localStorage.getItem('token');
-            const res = await fetch(`${API_URL}/drive/descargar/${idDoc}`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (res.ok) {
-                const blob = await res.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = nombre;
-                document.body.appendChild(a); a.click(); a.remove();
-            } else throw new Error();
-        } catch (e) { Swal.fire('Error', 'No se pudo descargar', 'error'); }
+            // Usamos apiFetchBlob para manejar los headers de auth automáticamente
+            // Nota: Asumimos que el backend tiene ruta /drive/descargar/:id que devuelve stream
+            const blob = await apiFetchBlob(`/drive/descargar/${idDoc}`);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a'); 
+            a.href = url; 
+            a.download = nombre;
+            document.body.appendChild(a); 
+            a.click(); 
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (e) { 
+            console.error(e);
+            Swal.fire('Error', 'No se pudo descargar el archivo', 'error'); 
+        }
+    };
+
+    // --- VISUALIZACIÓN SEGURA (Nuevo) ---
+    const handleViewFile = async (urlOriginal, id) => {
+        if (!urlOriginal) return;
+        setViewingId(id);
+        try {
+            const filename = extractFilename(urlOriginal);
+            // Usamos una ruta de streaming específica para Drive
+            // Debes crear esta ruta en el backend: router.get('/ver/:nombreArchivo', ...)
+            const blob = await apiFetchBlob(`/drive/ver/${filename}`);
+            const url = window.URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error("Error visualizando:", error);
+            // Fallback por si acaso es un link externo antiguo
+            if (urlOriginal.startsWith('http')) {
+                window.open(urlOriginal, '_blank');
+            } else {
+                Swal.fire('Error', 'No se pudo abrir el archivo.', 'error');
+            }
+        } finally {
+            setViewingId(null);
+        }
     };
 
     const confirmAction = async (title) => {
@@ -209,23 +244,23 @@ const FileManager = ({ initialFolderId, title, onClose }) => {
                             <div key={file.ID_Doc} className="document-row" style={{gridTemplateColumns: '40px 1fr 100px'}}>
                                 <div className="doc-icon-wrapper">{renderIcon(file.Tipo_Origen)}</div>
                                 
-                                {/* --- AQUÍ ESTÁ EL CAMBIO --- */}
+                                {/* NOMBRE CLICKABLE SEGURO */}
                                 <div 
                                     className="doc-name" 
-                                    onClick={() => window.open(file.Url_Archivo, '_blank')}
+                                    onClick={() => handleViewFile(file.Url_Archivo, file.ID_Doc)}
                                     style={{
-                                        cursor:'pointer', 
+                                        cursor: viewingId === file.ID_Doc ? 'wait' : 'pointer', 
                                         color: '#334155',
                                         transition: 'color 0.2s',
-                                        fontWeight: '500'
+                                        fontWeight: '500',
+                                        opacity: viewingId === file.ID_Doc ? 0.7 : 1
                                     }}
                                     onMouseEnter={(e) => e.target.style.color = '#0c4760'}
                                     onMouseLeave={(e) => e.target.style.color = '#334155'}
                                     title="Clic para ver archivo"
                                 >
-                                    {file.Nombre}
+                                    {viewingId === file.ID_Doc ? 'Cargando...' : file.Nombre}
                                 </div>
-                                {/* --------------------------- */}
 
                                 <div className="doc-actions">
                                     <button className="btn-row-action download" onClick={(e) => handleDownload(e, file.ID_Doc, file.Nombre)}><FaDownload/></button>

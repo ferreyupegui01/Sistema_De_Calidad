@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
-import { API_URL, getAuthHeaders } from '../../services/api';
+// Importamos utilidades seguras
+import { API_URL, getAuthHeaders, apiFetchBlob, extractFilename } from '../../services/api';
 
 // Servicios existentes
 import { getFichasTecnicas, uploadFichaTecnica, deleteFichaTecnica } from '../../services/trazabilidadService';
@@ -91,7 +92,7 @@ const GestionTrazabilidad = () => {
         loadCards();
         if (activeTab === 'fichas') loadFichas();
         if (activeTab === 'certificados') loadPlantillas();
-        if (activeTab === 'reportes') fetchReportesOperativos(); // NUEVO
+        if (activeTab === 'reportes') fetchReportesOperativos(); 
     }, [activeTab]);
 
     // --- LOGICA EXISTENTE ---
@@ -119,6 +120,23 @@ const GestionTrazabilidad = () => {
     const findOrCreateFolder = async (pid, name, headers) => { const res = await fetch(`${API_URL}/drive/contenido/${pid}`, { headers }); const data = await res.json(); const ex = data.carpetas.find(c => c.NombreCarpeta === name); if (ex) return ex.ID_Carpeta; await fetch(`${API_URL}/drive/carpeta`, { method: 'POST', headers, body: JSON.stringify({ nombre: name, idPadre: pid }) }); const res2 = await fetch(`${API_URL}/drive/contenido/${pid}`, { headers }); const data2 = await res2.json(); return data2.carpetas.find(c => c.NombreCarpeta === name).ID_Carpeta; };
 
     const loadFichas = async () => { setLoadingFichas(true); try { setFichas(await getFichasTecnicas()); } catch (e) { console.error(e); } finally { setLoadingFichas(false); } };
+    
+    // --- FUNCIÓN SEGURA PARA VER FICHA ---
+    const handleVerFicha = async (urlFicha) => {
+        if (!urlFicha) return;
+        try {
+            const filename = extractFilename(urlFicha);
+            // Usamos ruta segura (Debemos crearla en backend)
+            const blob = await apiFetchBlob(`/trazabilidad/ficha/${filename}`);
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error("Error al ver ficha:", error);
+            if (urlFicha.startsWith('http')) window.open(urlFicha, '_blank');
+            else Swal.fire('Error', 'No se pudo abrir el documento', 'error');
+        }
+    };
+
     const handleUploadFicha = async (e) => { e.preventDefault(); if (!newFichaNombre || !newFichaArchivo) return Swal.fire('Faltan datos', '', 'warning'); setUploadingFicha(true); const fd = new FormData(); fd.append('nombre', newFichaNombre); fd.append('archivo', newFichaArchivo); fd.append('descripcion', 'Ficha Técnica'); try { await uploadFichaTecnica(fd); Swal.fire('Subido', '', 'success'); setNewFichaNombre(''); setNewFichaArchivo(null); loadFichas(); } catch (e) { Swal.fire('Error', e.message, 'error'); } finally { setUploadingFicha(false); } };
     const handleDeleteFicha = async (id) => { if (await Swal.fire({ title: '¿Eliminar?', icon: 'warning', showCancelButton: true }).then(r => r.isConfirmed)) { await deleteFichaTecnica(id); loadFichas(); } };
     const filteredFichas = fichas.filter(f => f.Nombre.toLowerCase().includes(filtroFicha.toLowerCase()));
@@ -140,7 +158,6 @@ const GestionTrazabilidad = () => {
         setLoadingReportes(true);
         try {
             const data = await getReportes();
-            // Filtramos por "Trazabilidad" o categorías relacionadas
             const filtered = data.filter(r => 
                 (r.Programa === 'Trazabilidad') || 
                 (r.Categoria && r.Categoria.toLowerCase().includes('trazabilidad'))
@@ -306,7 +323,13 @@ const GestionTrazabilidad = () => {
                                             <div className="item-date">{new Date(f.Fecha_Creacion).toLocaleDateString()}</div>
                                         </div>
                                         <div className="item-actions">
-                                            <a href={f.Url_Archivo} target="_blank" className="btn-action-icon"><FaEye/></a>
+                                            {/* BOTÓN SEGURO PARA VER FICHA */}
+                                            <button 
+                                                onClick={() => handleVerFicha(f.Url_Archivo)} 
+                                                className="btn-action-icon"
+                                            >
+                                                <FaEye/>
+                                            </button>
                                             <button onClick={()=>handleDeleteFicha(f.ID_Doc)} className="btn-action-icon delete"><FaTrash/></button>
                                         </div>
                                     </div>
@@ -385,7 +408,6 @@ const GestionTrazabilidad = () => {
                 <div className="fade-in">
                     <div className="control-bar" style={{marginBottom:'20px', display:'flex', justifyContent:'space-between', flexWrap:'wrap', gap:'10px'}}>
                         
-                        {/* BUSCADOR CORREGIDO */}
                         <div style={{
                             display:'flex', 
                             alignItems:'center', 
@@ -394,19 +416,20 @@ const GestionTrazabilidad = () => {
                             borderRadius:'8px', 
                             padding:'0 15px', 
                             width:'300px',
-                            height: '42px'
+                            height: '42px',
+                            boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
                         }}>
                             <FaSearch style={{color:'#94a3b8', marginRight: '10px', flexShrink: 0}} />
                             <input 
                                 style={{
                                     border:'none', 
                                     outline:'none', 
-                                    padding:'0', 
                                     width:'100%', 
-                                    fontSize:'0.9rem',
+                                    padding:'0', 
+                                    fontSize: '0.9rem',
                                     background: 'transparent',
                                     color: '#334155'
-                                }} 
+                                }}
                                 placeholder="Buscar reporte..." 
                                 value={searchTermRep} 
                                 onChange={e => setSearchTermRep(e.target.value)} 
@@ -415,11 +438,7 @@ const GestionTrazabilidad = () => {
 
                         <div style={{display:'flex', alignItems:'center', gap:'10px'}}>
                             <FaFilter style={{color:'#64748b'}}/>
-                            <select 
-                                style={{padding:'8px', borderRadius:'8px', border:'1px solid #e2e8f0', background:'white', color:'#475569'}}
-                                value={filterStatus} 
-                                onChange={e => setFilterStatus(e.target.value)}
-                            >
+                            <select style={{padding:'8px', borderRadius:'8px', border:'1px solid #e2e8f0', background:'white', color:'#475569'}} value={filterStatus} onChange={e => setFilterStatus(e.target.value)} >
                                 <option value="todos">Todos</option>
                                 <option value="fallas">Con Hallazgos</option>
                                 <option value="ok">Conforme</option>
@@ -427,7 +446,6 @@ const GestionTrazabilidad = () => {
                             </select>
                         </div>
                     </div>
-
                     <div className="table-container">
                         <table className="modern-table">
                             <thead>
@@ -456,7 +474,7 @@ const GestionTrazabilidad = () => {
                                                 {rep.Verificado && <span className="verified-badge" style={{fontSize:'0.7rem', color:'#10b981', fontWeight:'bold', display:'flex', alignItems:'center', gap:'4px'}}><FaCheckDouble/> Verificado</span>}
                                             </div>
                                         </td>
-                                        <td className="modern-cell">
+                                        <td className="modern-cell" style={{textAlign:'right'}}>
                                             <div className="action-group">
                                                 <button className="btn-text-modern" onClick={() => handleOpenViewReporte(rep)}><FaFileContract/> Ver</button>
                                                 {rep.ID_ACPM ? 
@@ -511,7 +529,7 @@ const GestionTrazabilidad = () => {
                                                     border: newCardData.icono === key ? '2px solid #0c4760' : '1px solid white', 
                                                     background: newCardData.icono === key ? '#f0f9ff' : 'transparent', 
                                                     color: newCardData.icono === key ? '#0c4760' : '#64748b'
-                                                }}
+                                                }} 
                                                 title={key} 
                                             >
                                                 {ICON_MAP[key]}

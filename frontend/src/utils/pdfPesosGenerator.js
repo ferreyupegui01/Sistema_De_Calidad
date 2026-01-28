@@ -1,14 +1,36 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import logoImg from '../assets/logo_eltrece.png'; 
+// Importamos las herramientas de seguridad
+import { apiFetchBlob, extractFilename } from '../services/api';
 
-export const generarPDFPesos = (data, customHeader, verEnPantalla = false) => {
+// --- HELPER: CONVERTIR BLOB A BASE64 PARA JSPDF ---
+const getBase64FromSecureUrl = async (urlBD) => {
+    if (!urlBD) return null;
+    try {
+        const filename = extractFilename(urlBD);
+        // Pedimos el blob al endpoint seguro
+        const blob = await apiFetchBlob(`/pesos/evidencia/${filename}`);
+        
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+        });
+    } catch (error) {
+        console.warn("No se pudo cargar la imagen para el PDF:", error);
+        return null;
+    }
+};
+
+export const generarPDFPesos = async (data, customHeader, verEnPantalla = false) => {
     const doc = new jsPDF();
     const { cabecera, muestras } = data;
 
     // --- CONFIGURACIÓN ---
     const marginLeft = 15;
     const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height; // Necesario para calcular saltos de página
     const contentWidth = pageWidth - (marginLeft * 2);
     
     // Fechas
@@ -21,7 +43,7 @@ export const generarPDFPesos = (data, customHeader, verEnPantalla = false) => {
     const minVal = totalMuestras > 0 ? Math.min(...valores).toFixed(2) : 0;
     const maxVal = totalMuestras > 0 ? Math.max(...valores).toFixed(2) : 0;
     const aprobados = muestras.filter(m => m.Es_Conforme).length;
-    const rechazados = totalMuestras - aprobados;
+    // const rechazados = totalMuestras - aprobados; // (Variable no usada, se puede quitar)
 
     // --- 1. ENCABEZADO ---
     const startY = 10;
@@ -111,8 +133,7 @@ export const generarPDFPesos = (data, customHeader, verEnPantalla = false) => {
     printRow("MAQUINISTA:", cabecera.Maquinista, "PESO NOMINAL:", `${cabecera.Peso_Nominal} g`, currentY);
     currentY += rowHeight + 2;
 
-    // --- 3. PARÁMETROS Y SELLADO (TABLA COMBINADA) ---
-    // Preparamos datos de sellado
+    // --- 3. PARÁMETROS Y SELLADO ---
     const sellInf = cabecera.Sellado_Inferior ? 'OK' : 'FALLO';
     const sellSup = cabecera.Sellado_Superior ? 'OK' : 'FALLO';
     const sellVert = cabecera.Sellado_Vertical ? 'OK' : 'FALLO';
@@ -123,11 +144,9 @@ export const generarPDFPesos = (data, customHeader, verEnPantalla = false) => {
         ['Temp. Vertical', `${cabecera.Temp_Vertical} °C`, 'Mínimo', `${minVal} g`],
         ['Temp. H. Sup', `${cabecera.Temp_Horiz_Sup} °C`, 'Máximo', `${maxVal} g`],
         ['Temp. H. Inf', `${cabecera.Temp_Horiz_Inf} °C`, 'Aprobados', `${aprobados} / ${totalMuestras}`],
-        // Filas Nuevas para Sellado
         [{content: 'VERIFICACIÓN DE SELLADO', colSpan: 4, styles: {fillColor: [226, 232, 240], fontStyle:'bold', halign:'center'}}],
         ['Sellado Inferior', sellInf, 'Sellado Vertical', sellVert],
         ['Sellado Superior', sellSup, 'Loteado Legible', sellLot],
-        // Resultado Final
         [{content: 'RESULTADO FINAL DEL CONTROL', colSpan: 2, styles:{fontStyle:'bold'}}, {content: cabecera.Estado_Final, colSpan: 2, styles:{fontStyle:'bold', textColor: cabecera.Estado_Final === 'Aprobado' ? [22, 163, 74] : [220, 38, 38]}}]
     ];
 
@@ -142,11 +161,10 @@ export const generarPDFPesos = (data, customHeader, verEnPantalla = false) => {
             0: { fontStyle: 'bold', width: 40, fillColor: [248, 250, 252] },
             2: { fontStyle: 'bold', width: 40, fillColor: [248, 250, 252] }
         },
-        // Colorear textos de fallo en sellado
         didParseCell: function(data) {
             if (data.section === 'body') {
-                if (data.cell.raw === 'FALLO') data.cell.styles.textColor = [220, 38, 38]; // Rojo
-                if (data.cell.raw === 'OK') data.cell.styles.textColor = [22, 163, 74];   // Verde
+                if (data.cell.raw === 'FALLO') data.cell.styles.textColor = [220, 38, 38];
+                if (data.cell.raw === 'OK') data.cell.styles.textColor = [22, 163, 74];
             }
         },
         margin: { left: marginLeft, right: marginLeft }
@@ -201,6 +219,41 @@ export const generarPDFPesos = (data, customHeader, verEnPantalla = false) => {
         margin: { left: marginLeft, right: marginLeft }
     });
 
+    currentY = doc.lastAutoTable.finalY + 10;
+
+    // --- 5. NUEVO: EVIDENCIA FOTOGRÁFICA (Seguro) ---
+    if (cabecera.Url_Evidencia) {
+        // Verificar espacio, si no cabe, nueva página
+        if (currentY + 80 > pageHeight - 15) {
+            doc.addPage();
+            currentY = 20;
+        }
+
+        doc.setFontSize(9);
+        doc.setTextColor(12, 71, 96);
+        doc.setFont('helvetica', 'bold');
+        doc.text("EVIDENCIA ADJUNTA", marginLeft, currentY);
+        currentY += 5;
+
+        // Descargamos la imagen usando el método seguro
+        const base64Img = await getBase64FromSecureUrl(cabecera.Url_Evidencia);
+        
+        if (base64Img) {
+            // Intentamos ajustar la imagen a un ancho razonable (ej. 80mm)
+            const imgW = 80;
+            const imgH = 80; // Cuadrada por defecto
+            doc.addImage(base64Img, 'JPEG', marginLeft, currentY, imgW, imgH);
+            
+            // Borde opcional alrededor de la foto
+            doc.setDrawColor(200);
+            doc.rect(marginLeft, currentY, imgW, imgH);
+        } else {
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text("(No se pudo cargar la imagen de evidencia)", marginLeft, currentY + 5);
+        }
+    }
+
     // --- PIE DE PÁGINA ---
     const pageCount = doc.internal.getNumberOfPages();
     for(let i = 1; i <= pageCount; i++) {
@@ -211,7 +264,7 @@ export const generarPDFPesos = (data, customHeader, verEnPantalla = false) => {
         doc.text(`Página ${i} de ${pageCount}`, pageWidth - marginLeft, doc.internal.pageSize.height - 10, {align: 'right'});
     }
 
-    // --- DECISIÓN FINAL: DESCARGAR O ABRIR ---
+    // --- SALIDA ---
     const nombreArchivo = `Control_Pesos_${cabecera.Lote}_${cabecera.Producto}.pdf`;
 
     if (verEnPantalla) {

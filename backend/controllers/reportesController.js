@@ -1,6 +1,13 @@
 import { getConnection, sql } from '../config/db.js';
 import { registrarLog } from '../libs/logger.js';
 import { enviarCorreoNotificacion } from '../libs/email.js';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+// Configuración de rutas seguras
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ==========================================
 // 1. CREAR REPORTE (Con Foto, Notificación y Correo)
@@ -21,19 +28,18 @@ export const crearReporte = async (req, res) => {
             return res.status(400).json({ mensaje: 'Formato de respuestas inválido' });
         }
 
+        // --- CORRECCIÓN HOSTINGER: RUTA RELATIVA ---
         let urlEvidencia = null;
         if (req.file) {
-            urlEvidencia = `http://localhost:3000/uploads/${req.file.filename}`;
+            // Guardamos 'uploads/archivo.jpg'
+            urlEvidencia = `uploads/${req.file.filename}`;
         }
 
-        // --- CORRECCIÓN CRÍTICA AQUÍ ---
-        // Validación robusta: Convertimos tipo a mayúsculas y chequeamos 'false' en varios formatos
+        // Validación robusta de fallas
         const tieneFallas = respuestasParsed.some(r => {
             const tipoNormalizado = (r.tipo || '').toUpperCase();
-            // Es falla si es BOOL y cumple es falso (boolean, string 'false' o 0)
             return tipoNormalizado === 'BOOL' && (r.cumple === false || r.cumple === 'false' || r.cumple === 0);
         });
-        // -------------------------------
         
         const pool = await getConnection();
 
@@ -42,7 +48,7 @@ export const crearReporte = async (req, res) => {
             .input('ID_Usuario', sql.Int, idUsuario)
             .input('ID_Activo', sql.Int, idActivo)
             .input('ID_Formulario', sql.Int, idFormulario)
-            .input('TieneFallas', sql.Bit, tieneFallas) // Ahora sí enviará true correctamente
+            .input('TieneFallas', sql.Bit, tieneFallas)
             .input('UrlEvidencia', sql.NVarChar, urlEvidencia)
             .input('Observaciones', sql.NVarChar, observaciones || '')
             .output('NewId', sql.Int)
@@ -55,7 +61,6 @@ export const crearReporte = async (req, res) => {
             await pool.request()
                 .input('ID_Reporte', sql.Int, idReporte)
                 .input('ID_Pregunta', sql.Int, r.idPregunta)
-                // Aseguramos que si es TEXTO, siempre guarde bit 1 (Cumple), si es BOOL guarde el valor real
                 .input('Cumple', sql.Bit, (r.tipo && r.tipo.toUpperCase() === 'TEXT') ? 1 : r.cumple)
                 .input('Respuesta_Texto', sql.NVarChar, r.respuestaTexto || null)
                 .execute('dbo.SP_InsertarDetalleReporte');
@@ -86,7 +91,6 @@ export const crearReporte = async (req, res) => {
         
         const correosAdmins = adminsResult.recordset.map(u => u.Email);
         
-        // Solo enviamos correo si hay fallas o es política de la empresa (aquí lo dejo para todos)
         correosAdmins.forEach(email => {
             enviarCorreoNotificacion(email, tituloNotif, mensajeNotif);
         });
@@ -143,5 +147,24 @@ export const verificarReporte = async (req, res) => {
         res.json({ mensaje: 'Reporte verificado correctamente' });
     } catch (error) {
         res.status(500).json({ mensaje: 'Error al verificar reporte' });
+    }
+};
+
+// ==========================================
+// NUEVA FUNCIÓN: VER EVIDENCIA DE REPORTE (STREAMING)
+// ==========================================
+export const verEvidenciaReporte = (req, res) => {
+    const { nombreArchivo } = req.params;
+
+    if (!nombreArchivo || nombreArchivo.includes('..') || nombreArchivo.includes('/') || nombreArchivo.includes('\\')) {
+        return res.status(400).json({ mensaje: 'Nombre de archivo inválido' });
+    }
+
+    const rutaFisica = path.resolve(__dirname, '../uploads', nombreArchivo);
+
+    if (fs.existsSync(rutaFisica)) {
+        res.sendFile(rutaFisica);
+    } else {
+        res.status(404).json({ mensaje: 'Evidencia no encontrada en el servidor' });
     }
 };

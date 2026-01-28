@@ -10,7 +10,8 @@ import {
     cambiarEstadoActividad, 
     agregarSeguimiento,
     obtenerTodasActividades,
-    crearActividadAgendada 
+    crearActividadAgendada,
+    verEvidenciaCronograma // <--- 1. IMPORTACIÓN NUEVA
 } from '../controllers/cronogramaController.js';
 import { checkAuth, esAdmin } from '../middlewares/authMiddleware.js';
 import { upload } from '../libs/storage.js';
@@ -22,7 +23,6 @@ const router = Router();
 // ==========================================
 router.route('/')
     .get(checkAuth, esAdmin, listarCronogramas)
-    // CORRECCIÓN: Restauramos la creación de cronogramas en la raíz
     .post(checkAuth, esAdmin, crearCronograma); 
 
 router.delete('/:id', checkAuth, esAdmin, eliminarCronograma);
@@ -30,7 +30,6 @@ router.delete('/:id', checkAuth, esAdmin, eliminarCronograma);
 // ==========================================
 // 2. AGENDAR ACTIVIDADES (DESDE MÓDULOS)
 // ==========================================
-// NUEVA RUTA ESPECÍFICA para evitar el conflicto con crearCronograma
 router.post('/agendar', checkAuth, esAdmin, crearActividadAgendada);
 
 // ==========================================
@@ -48,5 +47,12 @@ router.delete('/actividad/:id', checkAuth, esAdmin, eliminarActividad);
 // ==========================================
 router.put('/actividad/estado/:id', checkAuth, esAdmin, cambiarEstadoActividad);
 router.put('/actividad/seguimiento/:id', checkAuth, esAdmin, upload.single('evidencia'), agregarSeguimiento);
+
+// ==========================================
+// 5. NUEVA RUTA: VER EVIDENCIA (STREAMING)
+// ==========================================
+// Permite ver la foto/PDF sin exponer la carpeta uploads públicamente
+// Uso frontend: apiFetchBlob(`/cronogramas/evidencia/${nombreArchivo}`)
+router.get('/evidencia/:nombreArchivo', checkAuth, verEvidenciaCronograma);
 
 export default router;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
-import { API_URL, getAuthHeaders } from '../../services/api';
+import { API_URL, getAuthHeaders, apiFetchBlob, extractFilename } from '../../services/api';
 import '../../styles/Tables.css';
 import '../../styles/Dashboard.css'; 
 import { 
@@ -14,7 +14,7 @@ import {
 
 import ModalVerDetalleCapacitacion from '../../components/modals/ModalVerDetalleCapacitacion';
 import FileManager from '../../components/FileManager';
-import ModalVerReporte from '../../components/modals/ModalVerReporte'; // Importamos visor de reportes
+import ModalVerReporte from '../../components/modals/ModalVerReporte';
 
 // MAPA DE ICONOS
 const ICON_MAP = {
@@ -66,7 +66,7 @@ const GestionCapacitaciones = () => {
     const [showCreateCardModal, setShowCreateCardModal] = useState(false);
     const [newCardData, setNewCardData] = useState({ titulo:'', descripcion:'', color:'#0c4760', icono:'folder' });
 
-    // --- NUEVO: ESTADOS PARA REPORTES ---
+    // --- REPORTES ---
     const [reportes, setReportes] = useState([]);
     const [loadingReportes, setLoadingReportes] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -80,10 +80,10 @@ const GestionCapacitaciones = () => {
             loadCards(); 
         }
         if (activeTab === 'resultados') loadResumenCursos();
-        if (activeTab === 'reportes') fetchReportes(); // Nueva carga
+        if (activeTab === 'reportes') fetchReportes(); 
     }, [activeTab]);
 
-    // --- FUNCIÓN AUXILIAR PARA MANEJAR SESIÓN VENCIDA ---
+    // --- AUTH ERROR HANDLER ---
     const handleAuthError = () => {
         Swal.fire({
             title: 'Sesión Caducada',
@@ -96,6 +96,26 @@ const GestionCapacitaciones = () => {
             localStorage.removeItem('user');
             window.location.href = '/'; 
         });
+    };
+
+    // --- FUNCIÓN SEGURA PARA VER MATERIAL (PDF/VIDEO) ---
+    const handleViewMaterial = async (urlMaterial) => {
+        if (!urlMaterial) return;
+        try {
+            const filename = extractFilename(urlMaterial);
+            // Usamos ruta segura (Debemos crearla en backend)
+            const blob = await apiFetchBlob(`/capacitacion/material/${filename}`);
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error("Error al ver material:", error);
+            // Fallback para links externos
+            if(urlMaterial.startsWith('http')) {
+                window.open(urlMaterial, '_blank');
+            } else {
+                Swal.fire('Error', 'No se pudo cargar el material educativo', 'error');
+            }
+        }
     };
 
     // --- CARGAS DE DATOS ---
@@ -142,7 +162,6 @@ const GestionCapacitaciones = () => {
         } catch (e) { console.error(e); } finally { setLoading(false); } 
     };
 
-    // --- NUEVO: CARGAR REPORTES DE CAPACITACIÓN ---
     const fetchReportes = async () => {
         setLoadingReportes(true);
         try {
@@ -150,7 +169,6 @@ const GestionCapacitaciones = () => {
             if (res.status === 401) return handleAuthError();
             if (res.ok) {
                 const data = await res.json();
-                // Filtramos solo los de programa 'Capacitación'
                 const onlyCap = data.filter(r => r.Programa === 'Capacitación' || r.Categoria === 'Capacitacion');
                 setReportes(onlyCap);
             }
@@ -482,7 +500,16 @@ const GestionCapacitaciones = () => {
                                     {resumenCursos.map(curso => (
                                         <tr key={curso.ID_Capacitacion}>
                                             <td style={{fontWeight:'600', color:'#1e293b'}}>{curso.Titulo}</td>
-                                            <td><a href={curso.Url_Material} target="_blank" rel="noopener noreferrer" className="btn-action" style={{color:'#0369a1', textDecoration:'none', display:'inline-flex', gap:'5px', width:'auto', padding:'5px 10px'}}><FaEye/> Ver Material</a></td>
+                                            <td>
+                                                {/* AQUÍ ESTÁ EL CAMBIO IMPORTANTE */}
+                                                <button 
+                                                    onClick={() => handleViewMaterial(curso.Url_Material)}
+                                                    className="btn-action" 
+                                                    style={{color:'#0369a1', textDecoration:'none', display:'inline-flex', gap:'5px', width:'auto', padding:'5px 10px', background:'transparent', border:'none', cursor:'pointer'}}
+                                                >
+                                                    <FaEye/> Ver Material
+                                                </button>
+                                            </td>
                                             <td><span className="badge badge-success">Activo</span></td>
                                             <td><span className="badge" style={{background:'#f0f9ff', color:'#0369a1', fontSize:'0.85rem'}}>{curso.Total_Evaluaciones} Evaluaciones</span></td>
                                             <td><button className="btn-action" onClick={() => handleSelectCurso(curso)} title="Ver Participantes" style={{width:'auto', padding:'5px 12px', display:'inline-flex', gap:'5px', color:'#0c4760'}}><FaListOl /> Ver Participantes</button></td>

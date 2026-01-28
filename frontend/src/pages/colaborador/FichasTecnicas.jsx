@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { getFichasTecnicas } from '../../services/trazabilidadService';
+// Importamos las utilidades de seguridad
+import { apiFetchBlob, extractFilename } from '../../services/api';
 import { FaSearch, FaFilePdf, FaFileImage, FaDownload, FaBoxOpen, FaEye, FaArrowLeft, FaFileAlt, FaFileExcel } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import '../../styles/Tables.css'; 
 
 const FichasTecnicas = () => {
@@ -9,8 +12,10 @@ const FichasTecnicas = () => {
     const [fichas, setFichas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filtro, setFiltro] = useState('');
-    // Estado para saber qué archivo se está descargando en este momento
+    
+    // Estados de carga individuales
     const [downloadingId, setDownloadingId] = useState(null);
+    const [viewingId, setViewingId] = useState(null);
 
     useEffect(() => {
         cargarDatos();
@@ -24,33 +29,53 @@ const FichasTecnicas = () => {
         finally { setLoading(false); }
     };
 
-    // --- LÓGICA DE DESCARGA DIRECTA ("DE UNA") ---
-    const handleDirectDownload = async (url, nombre, id) => {
-        setDownloadingId(id); // Activa el estado de carga para este botón
+    // --- LÓGICA DE DESCARGA SEGURA ---
+    const handleDirectDownload = async (urlOriginal, nombre, id) => {
+        if (!urlOriginal) return;
+        setDownloadingId(id);
         try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error('Error al obtener el archivo');
+            const filename = extractFilename(urlOriginal);
+            // Usamos la ruta de streaming de Trazabilidad
+            const blob = await apiFetchBlob(`/trazabilidad/ficha/${filename}`);
             
-            // Convertimos la respuesta en un "Blob" (archivo binario en memoria)
-            const blob = await response.blob();
-            const blobUrl = window.URL.createObjectURL(blob);
-            
-            // Creamos un enlace temporal invisible para forzar la descarga
+            // Crear link de descarga
+            const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.href = blobUrl;
-            link.download = nombre; // Esto obliga al navegador a guardar con este nombre
+            link.href = url;
+            link.download = nombre || filename;
             document.body.appendChild(link);
             link.click();
-            
-            // Limpieza
             document.body.removeChild(link);
-            window.URL.revokeObjectURL(blobUrl);
+            window.URL.revokeObjectURL(url);
 
         } catch (error) {
             console.error("Error en descarga:", error);
-            alert("No se pudo descargar el archivo automáticamente. Intente visualizarlo.");
+            Swal.fire('Error', 'No se pudo descargar el archivo.', 'error');
         } finally {
-            setDownloadingId(null); // Desactiva el estado de carga
+            setDownloadingId(null);
+        }
+    };
+
+    // --- LÓGICA DE VISUALIZACIÓN SEGURA ---
+    const handleView = async (urlOriginal, id) => {
+        if (!urlOriginal) return;
+        setViewingId(id);
+        try {
+            const filename = extractFilename(urlOriginal);
+            // Usamos la misma ruta de streaming
+            const blob = await apiFetchBlob(`/trazabilidad/ficha/${filename}`);
+            const url = window.URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error("Error al visualizar:", error);
+            // Fallback para urls antiguas http
+            if (urlOriginal.startsWith('http')) {
+                window.open(urlOriginal, '_blank');
+            } else {
+                Swal.fire('Error', 'No se pudo abrir el documento.', 'error');
+            }
+        } finally {
+            setViewingId(null);
         }
     };
 
@@ -117,17 +142,16 @@ const FichasTecnicas = () => {
 
                         {/* Botones Acción */}
                         <div style={{ background: '#f8fafc', padding: '10px 1.5rem', borderTop: '1px solid #f1f5f9', display: 'flex', gap: '10px' }}>
-                            {/* BOTÓN VISUALIZAR */}
-                            <a 
-                                href={ficha.Url_Archivo} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                style={{ flex: 1, textAlign: 'center', padding: '8px', borderRadius: '6px', background: 'white', border: '1px solid #e2e8f0', color: '#334155', textDecoration: 'none', fontSize: '0.9rem', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
+                            {/* BOTÓN VISUALIZAR SEGURA */}
+                            <button 
+                                onClick={() => handleView(ficha.Url_Archivo, ficha.ID_Doc)}
+                                disabled={viewingId === ficha.ID_Doc}
+                                style={{ flex: 1, textAlign: 'center', padding: '8px', borderRadius: '6px', background: 'white', border: '1px solid #e2e8f0', color: '#334155', fontSize: '0.9rem', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer' }}
                             >
-                                <FaEye /> Visualizar
-                            </a>
+                                {viewingId === ficha.ID_Doc ? 'Cargando...' : <><FaEye /> Visualizar</>}
+                            </button>
 
-                            {/* BOTÓN DESCARGAR (LÓGICA MEJORADA) */}
+                            {/* BOTÓN DESCARGAR SEGURA */}
                             <button 
                                 onClick={() => handleDirectDownload(ficha.Url_Archivo, ficha.Nombre, ficha.ID_Doc)}
                                 disabled={downloadingId === ficha.ID_Doc}
@@ -139,7 +163,6 @@ const FichasTecnicas = () => {
                                     background: '#0c4760', 
                                     border: '1px solid #0c4760', 
                                     color: 'white', 
-                                    textDecoration: 'none', 
                                     fontSize: '0.9rem', 
                                     fontWeight: '600', 
                                     display: 'flex', 

@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { getHistorialCertificados } from '../../services/certificadosService';
-import { FaTimes, FaSearch, FaHistory, FaFilter, FaFilePdf, FaIndustry, FaUserTie } from 'react-icons/fa';
+// Importamos utilidades seguras
+import { apiFetchBlob, extractFilename } from '../../services/api';
+import { FaTimes, FaSearch, FaHistory, FaFilter, FaFilePdf, FaIndustry, FaUserTie, FaEye } from 'react-icons/fa';
+import Swal from 'sweetalert2';
 import '../../styles/ModalHistorialCertificados.css';
 
 const ModalHistorialCertificados = ({ isOpen, onClose, plantillaFiltro }) => {
@@ -35,6 +38,28 @@ const ModalHistorialCertificados = ({ isOpen, onClose, plantillaFiltro }) => {
         }
     };
 
+    // --- FUNCIÓN SEGURA PARA VER CERTIFICADO ---
+    const handleVerCertificado = async (urlPdf) => {
+        if (!urlPdf) return;
+        
+        try {
+            const filename = extractFilename(urlPdf);
+            // Usamos una ruta de streaming para certificados. 
+            // (Asegúrate de crearla en el backend: /certificados/pdf/:filename)
+            const blob = await apiFetchBlob(`/certificados/pdf/${filename}`);
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error("Error viendo certificado:", error);
+            // Fallback para certificados antiguos
+            if (urlPdf.startsWith('http')) {
+                window.open(urlPdf, '_blank');
+            } else {
+                Swal.fire('Error', 'No se pudo abrir el certificado.', 'error');
+            }
+        }
+    };
+
     const filtered = historial.filter(h => {
         if (plantillaFiltro) {
             const idHistorial = String(h.ID_Plantilla || '');
@@ -43,7 +68,6 @@ const ModalHistorialCertificados = ({ isOpen, onClose, plantillaFiltro }) => {
         }
         
         const search = filtro.toLowerCase();
-        
         const lote = (h.Lote || '').toString().toLowerCase();
         const cliente = (h.Cliente || '').toString().toLowerCase();
         const responsable = (h.Responsable || '').toString().toLowerCase();
@@ -111,7 +135,6 @@ const ModalHistorialCertificados = ({ isOpen, onClose, plantillaFiltro }) => {
                                         <tr key={cert.ID_Generado || idx} className="history-row">
                                             <td>
                                                 <div className="date-cell">
-                                                    {/* CORRECCIÓN HORA: UTC */}
                                                     <span className="date-text">
                                                         {new Date(cert.Fecha_Generacion).toLocaleDateString('es-CO', { timeZone: 'UTC' })}
                                                     </span>
@@ -141,9 +164,14 @@ const ModalHistorialCertificados = ({ isOpen, onClose, plantillaFiltro }) => {
                                             
                                             <td style={{textAlign:'center'}}>
                                                 {cert.Url_PDF ? (
-                                                    <a href={cert.Url_PDF} target="_blank" rel="noopener noreferrer" className="btn-pdf-action" title="Ver Documento">
-                                                        <FaFilePdf/>
-                                                    </a>
+                                                    <button 
+                                                        onClick={() => handleVerCertificado(cert.Url_PDF)} 
+                                                        className="btn-pdf-action" 
+                                                        title="Ver Documento"
+                                                        style={{border:'none', background:'transparent', cursor:'pointer'}}
+                                                    >
+                                                        <FaFilePdf size={18} color="#ef4444"/>
+                                                    </button>
                                                 ) : <span className="no-doc">-</span>}
                                             </td>
                                         </tr>

@@ -8,7 +8,8 @@ import {
 
 import { getDetallePeso } from '../../services/pesosService';
 import { generarPDFPesos } from '../../utils/pdfPesosGenerator';
-import { API_URL } from '../../services/api';
+// Importamos las utilidades de streaming
+import { apiFetchBlob, extractFilename } from '../../services/api';
 import '../../styles/Modal.css';
 import '../../styles/ModalDetallePeso.css';
 
@@ -58,12 +59,26 @@ const ModalDetallePeso = ({ isOpen, onClose, idControl }) => {
         if (data) generarPDFPesos(data, pdfConfig);
     };
 
-    // Helper para abrir evidencia (CORREGIDO)
-    const handleOpenEvidencia = () => {
+    // --- HELPER PARA ABRIR EVIDENCIA (CORREGIDO PARA HOSTINGER) ---
+    const handleOpenEvidencia = async () => {
         if (data?.cabecera?.Url_Evidencia) {
-            const serverUrl = API_URL.replace('/api', ''); 
-            const fullUrl = `${serverUrl}${data.cabecera.Url_Evidencia}`;
-            window.open(fullUrl, '_blank');
+            try {
+                // 1. Extraemos solo el nombre del archivo (ej: "foto-123.jpg")
+                const filename = extractFilename(data.cabecera.Url_Evidencia);
+                
+                // 2. Pedimos el archivo al endpoint seguro (Streaming)
+                const blob = await apiFetchBlob(`/pesos/evidencia/${filename}`);
+                
+                // 3. Creamos una URL temporal y la abrimos
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+
+                // Nota: Idealmente deberíamos revocar la URL después, pero al ser _blank está bien
+                setTimeout(() => URL.revokeObjectURL(url), 60000); // Revocar al minuto para liberar memoria
+            } catch (error) {
+                console.error("Error al abrir evidencia:", error);
+                alert("No se pudo cargar la evidencia. Verifique su conexión.");
+            }
         }
     };
 
@@ -204,28 +219,28 @@ const ModalDetallePeso = ({ isOpen, onClose, idControl }) => {
                                 
                                 {showConfig && (
                                     <div className="config-body" style={{padding:'15px', background:'#f8fafc', borderTop:'1px solid #e2e8f0'}}>
-                                        <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'15px'}}>
-                                            <div className="form-group">
-                                                <label style={{fontSize:'0.8rem', fontWeight:'bold', display:'block', marginBottom:'5px'}}>Nombre Empresa</label>
-                                                <input className="form-control" style={{width:'100%', padding:'8px', border:'1px solid #cbd5e1', borderRadius:'5px'}} value={pdfConfig.empresa} onChange={e=>setPdfConfig({...pdfConfig, empresa:e.target.value})} />
+                                            <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'15px'}}>
+                                                <div className="form-group">
+                                                    <label style={{fontSize:'0.8rem', fontWeight:'bold', display:'block', marginBottom:'5px'}}>Nombre Empresa</label>
+                                                    <input className="form-control" style={{width:'100%', padding:'8px', border:'1px solid #cbd5e1', borderRadius:'5px'}} value={pdfConfig.empresa} onChange={e=>setPdfConfig({...pdfConfig, empresa:e.target.value})} />
+                                                </div>
+                                                <div className="form-group">
+                                                    <label style={{fontSize:'0.8rem', fontWeight:'bold', display:'block', marginBottom:'5px'}}>Sistema / Proceso</label>
+                                                    <input className="form-control" style={{width:'100%', padding:'8px', border:'1px solid #cbd5e1', borderRadius:'5px'}} value={pdfConfig.sistema} onChange={e=>setPdfConfig({...pdfConfig, sistema:e.target.value})} />
+                                                </div>
+                                                <div className="form-group" style={{gridColumn:'span 2'}}>
+                                                    <label style={{fontSize:'0.8rem', fontWeight:'bold', display:'block', marginBottom:'5px'}}>Título del Documento</label>
+                                                    <input className="form-control" style={{width:'100%', padding:'8px', border:'1px solid #cbd5e1', borderRadius:'5px'}} value={pdfConfig.titulo} onChange={e=>setPdfConfig({...pdfConfig, titulo:e.target.value})} />
+                                                </div>
+                                                <div className="form-group">
+                                                    <label style={{fontSize:'0.8rem', fontWeight:'bold', display:'block', marginBottom:'5px'}}>Código Formato</label>
+                                                    <input className="form-control" style={{width:'100%', padding:'8px', border:'1px solid #cbd5e1', borderRadius:'5px'}} value={pdfConfig.codigo} onChange={e=>setPdfConfig({...pdfConfig, codigo:e.target.value})} />
+                                                </div>
+                                                <div className="form-group">
+                                                    <label style={{fontSize:'0.8rem', fontWeight:'bold', display:'block', marginBottom:'5px'}}>Versión</label>
+                                                    <input className="form-control" style={{width:'100%', padding:'8px', border:'1px solid #cbd5e1', borderRadius:'5px'}} value={pdfConfig.version} onChange={e=>setPdfConfig({...pdfConfig, version:e.target.value})} />
+                                                </div>
                                             </div>
-                                            <div className="form-group">
-                                                <label style={{fontSize:'0.8rem', fontWeight:'bold', display:'block', marginBottom:'5px'}}>Sistema / Proceso</label>
-                                                <input className="form-control" style={{width:'100%', padding:'8px', border:'1px solid #cbd5e1', borderRadius:'5px'}} value={pdfConfig.sistema} onChange={e=>setPdfConfig({...pdfConfig, sistema:e.target.value})} />
-                                            </div>
-                                            <div className="form-group" style={{gridColumn:'span 2'}}>
-                                                <label style={{fontSize:'0.8rem', fontWeight:'bold', display:'block', marginBottom:'5px'}}>Título del Documento</label>
-                                                <input className="form-control" style={{width:'100%', padding:'8px', border:'1px solid #cbd5e1', borderRadius:'5px'}} value={pdfConfig.titulo} onChange={e=>setPdfConfig({...pdfConfig, titulo:e.target.value})} />
-                                            </div>
-                                            <div className="form-group">
-                                                <label style={{fontSize:'0.8rem', fontWeight:'bold', display:'block', marginBottom:'5px'}}>Código Formato</label>
-                                                <input className="form-control" style={{width:'100%', padding:'8px', border:'1px solid #cbd5e1', borderRadius:'5px'}} value={pdfConfig.codigo} onChange={e=>setPdfConfig({...pdfConfig, codigo:e.target.value})} />
-                                            </div>
-                                            <div className="form-group">
-                                                <label style={{fontSize:'0.8rem', fontWeight:'bold', display:'block', marginBottom:'5px'}}>Versión</label>
-                                                <input className="form-control" style={{width:'100%', padding:'8px', border:'1px solid #cbd5e1', borderRadius:'5px'}} value={pdfConfig.version} onChange={e=>setPdfConfig({...pdfConfig, version:e.target.value})} />
-                                            </div>
-                                        </div>
                                     </div>
                                 )}
                             </div>

@@ -1,5 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import Swal from 'sweetalert2';
+// --- IMPORTACIONES CORREGIDAS PARA LA EVIDENCIA ---
+import { API_URL, apiFetchBlob, extractFilename } from '../../services/api';
+
 import { 
     getCronogramas, 
     getAllActividades, 
@@ -109,6 +112,34 @@ const Cronogramas = () => {
         } catch (error) { console.error(error); }
     };
 
+    // --- NUEVA FUNCIÓN PARA VER EVIDENCIA ---
+    const handleVerEvidencia = async (urlEvidencia) => {
+        if (!urlEvidencia) return;
+
+        // Si es un enlace externo completo (ej: https://...), lo abrimos directo
+        if (urlEvidencia.startsWith('http')) {
+            window.open(urlEvidencia, '_blank');
+            return;
+        }
+
+        try {
+            // Extraemos solo el nombre del archivo (ej: "evidencia-123.pdf")
+            const filename = extractFilename(urlEvidencia);
+            
+            // Usamos el endpoint inteligente '/drive/ver/' que arreglamos en el backend
+            const blob = await apiFetchBlob(`/drive/ver/${filename}`);
+            
+            if (blob.size === 0) throw new Error("El archivo parece estar vacío.");
+
+            // Creamos una URL temporal para ver el archivo
+            const urlBlob = URL.createObjectURL(blob);
+            window.open(urlBlob, '_blank');
+        } catch (error) {
+            console.error("Error visualizando evidencia:", error);
+            Swal.fire('Error', 'No se pudo abrir la evidencia. Verifique que el archivo exista.', 'error');
+        }
+    };
+
     const formatearFechaLocal = (fechaString) => {
         if (!fechaString) return '-';
         const partes = fechaString.toString().split('T')[0].split('-');
@@ -202,10 +233,8 @@ const Cronogramas = () => {
 
         if (Estado === 'Realizada') {
             if (Tipo === 'ACPM') {
-                // ACPM REALIZADO: Color Teal (Verde Azulado) Diferente
                 backgroundColor = '#0d9488'; 
             } else {
-                // ACTIVIDAD NORMAL REALIZADA: Verde Estándar
                 backgroundColor = '#10b981'; 
             }
         } 
@@ -326,7 +355,6 @@ const Cronogramas = () => {
                             <span style={{width:'10px', height:'10px', borderRadius:'50%', background:'#10b981'}}></span>
                             Act. Realizadas <strong>({stats.realizadas})</strong>
                         </span>
-                        {/* NUEVA LEYENDA PARA ACPM REALIZADO */}
                         <span style={{display:'flex', alignItems:'center', gap:'5px', color:'#334155'}}>
                             <span style={{width:'10px', height:'10px', borderRadius:'50%', background:'#0d9488'}}></span>
                             ACPM Realizado
@@ -358,16 +386,15 @@ const Cronogramas = () => {
                         eventPropGetter={eventStyleGetter}
                         onSelectEvent={handleSelectEvent}
                         
-                        /* AQUÍ ESTÁ EL CAMBIO CLAVE PARA EL "+3 more" */
                         onShowMore={handleShowMore} 
-                        popup={false} // Desactivamos el popup nativo para usar el nuestro
+                        popup={false} 
                     />
                 </div>
             </div>
 
             {/* LISTADO DETALLADO */}
             <div className="card-section">
-                {/* ... (Esta sección se mantiene igual que en tu código anterior) ... */}
+                
                 <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px', flexWrap: 'wrap', gap: '15px'}}>
                     <h3 style={{margin:0, display:'flex', alignItems:'center', gap:'10px', fontSize:'1.1rem'}}>
                         <FaList /> Listado Detallado
@@ -430,8 +457,16 @@ const Cronogramas = () => {
                                             </span>
                                         </td>
                                         <td style={{textAlign:'center'}}>
+                                            {/* --- CORRECCIÓN AQUÍ: BOTÓN EN VEZ DE LINK DIRECTO --- */}
                                             {act.Url_Evidencia ? (
-                                                <a href={act.Url_Evidencia} target="_blank" rel="noreferrer" style={{color:'#0ea5e9'}}><FaEye/></a>
+                                                <button 
+                                                    className="btn-icon" 
+                                                    onClick={() => handleVerEvidencia(act.Url_Evidencia)} 
+                                                    style={{color:'#0ea5e9', cursor:'pointer', background:'transparent', border:'none'}}
+                                                    title="Ver Evidencia"
+                                                >
+                                                    <FaEye/>
+                                                </button>
                                             ) : '-'}
                                         </td>
                                         <td>
@@ -479,14 +514,13 @@ const Cronogramas = () => {
                         <div className="modal-body-clean" style={{padding:'10px'}}>
                             <div style={{display:'flex', flexDirection:'column', gap:'8px'}}>
                                 {dayEvents.map((evt, idx) => {
-                                    // Obtenemos el estilo para el badge
                                     const styleObj = eventStyleGetter(evt).style;
                                     return (
                                         <div 
                                             key={idx}
                                             onClick={() => {
-                                                setShowMoreModal(false); // Cierra el modal de lista
-                                                handleSelectEvent(evt);  // Abre el detalle
+                                                setShowMoreModal(false); 
+                                                handleSelectEvent(evt);  
                                             }}
                                             style={{
                                                 padding:'10px', 

@@ -52,6 +52,7 @@ const ModalHistorialPesos = ({ isOpen, onClose }) => {
                 didOpen: () => { Swal.showLoading(); }
             });
 
+            // Obtenemos los datos completos del control
             const data = await getDetallePeso(idControl);
 
             const pdfConfig = {
@@ -62,7 +63,8 @@ const ModalHistorialPesos = ({ isOpen, onClose }) => {
                 version: '01'
             };
 
-            generarPDFPesos(data, pdfConfig, true);
+            // Generamos el PDF (Este archivo necesita ser revisado luego)
+            await generarPDFPesos(data, pdfConfig, true);
 
             Swal.close(); 
 
@@ -133,14 +135,12 @@ const ModalHistorialPesos = ({ isOpen, onClose }) => {
                                         filteredData.map(item => (
                                             <tr key={item.ID_Control}>
                                                 <td>
-                                                    {/* --- CORRECCIÓN DE HORA APLICADA AQUÍ --- */}
                                                     <div style={{fontWeight:'bold', color:'#334155'}}>
                                                         {new Date(item.Fecha_Registro).toLocaleDateString('es-CO', { timeZone: 'UTC' })}
                                                     </div>
                                                     <div style={{fontSize:'0.75rem', color:'#94a3b8'}}>
                                                         {new Date(item.Fecha_Registro).toLocaleTimeString('es-CO', { timeZone: 'UTC', hour:'2-digit', minute:'2-digit' })}
                                                     </div>
-                                                    {/* -------------------------------------- */}
                                                 </td>
                                                 <td style={{fontWeight:'bold', color:'#0c4760'}}>{item.Lote}</td>
                                                 <td>{item.Producto}</td>

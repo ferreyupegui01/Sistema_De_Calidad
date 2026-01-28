@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
-import { API_URL, getAuthHeaders } from '../../services/api';
+// Importamos utilidades de seguridad
+import { API_URL, getAuthHeaders, apiFetchBlob, extractFilename } from '../../services/api';
 
 // --- SERVICIOS ---
 import { getHistorialAgua } from '../../services/specializedService'; // Registro Diario (Cloro/pH)
@@ -89,6 +90,25 @@ const HistorialAguaAdmin = () => {
         finally { setLoadingDiario(false); }
     };
 
+    // --- FUNCIÓN SEGURA PARA VER EVIDENCIA DE AGUA ---
+    const handleVerEvidencia = async (urlEvidencia) => {
+        if (!urlEvidencia) return;
+        try {
+            const filename = extractFilename(urlEvidencia);
+            // CORRECCIÓN APLICADA: Se agregó el prefijo '/specialized' a la ruta
+            const blob = await apiFetchBlob(`/specialized/agua/evidencia/${filename}`);
+            
+            if (blob.size === 0) throw new Error("Archivo vacío");
+
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error("Error al ver evidencia:", error);
+            if (urlEvidencia.startsWith('http')) window.open(urlEvidencia, '_blank');
+            else Swal.fire('Error', 'No se pudo abrir la evidencia', 'error');
+        }
+    };
+
     // ==========================================
     // 2. LÓGICA DOCUMENTACIÓN (CARPETAS)
     // ==========================================
@@ -158,8 +178,6 @@ const HistorialAguaAdmin = () => {
         setLoadingReportes(true);
         try {
             const data = await getReportes();
-            // Filtrar reportes donde Programa sea "Agua Potable" o similar
-            // OJO: Asegúrate de usar el mismo nombre que usarás en el ModalCreateForm
             const onlyAgua = data.filter(r => 
                 (r.Programa === 'Agua Potable') || 
                 (r.Categoria && r.Categoria.toLowerCase().includes('agua'))
@@ -335,9 +353,18 @@ const HistorialAguaAdmin = () => {
                                             </span>
                                         </td>
                                         <td>
-                                            <a href={row.Url_Foto_Evidencia} target="_blank" rel="noopener noreferrer" className="btn-action" style={{display:'inline-flex', textDecoration:'none', color:'#64748b'}}>
-                                                <FaEye /> Ver Foto
-                                            </a>
+                                            {/* BOTÓN SEGURO PARA VER FOTO */}
+                                            {row.Url_Foto_Evidencia ? (
+                                                <button 
+                                                    onClick={() => handleVerEvidencia(row.Url_Foto_Evidencia)} 
+                                                    className="btn-action" 
+                                                    style={{display:'inline-flex', alignItems:'center', gap:'5px', textDecoration:'none', color:'#64748b', border:'none', background:'transparent', cursor:'pointer'}}
+                                                >
+                                                    <FaEye /> Ver Foto
+                                                </button>
+                                            ) : (
+                                                <span style={{color:'#94a3b8', fontSize:'0.85rem'}}>Sin foto</span>
+                                            )}
                                         </td>
                                     </tr>
                                 ))
@@ -421,7 +448,7 @@ const HistorialAguaAdmin = () => {
                                                     <span className="status-pill danger"><FaExclamationTriangle/> Hallazgo</span> : 
                                                     <span className="status-pill success"><FaCheckCircle/> Conforme</span>
                                                 }
-                                                {rep.Verificado && <span style={{fontSize:'0.7rem', color:'#10b981', fontWeight:'bold', display:'flex', alignItems:'center', gap:'4px'}}><FaCheckDouble/> Verificado</span>}
+                                                {rep.Verificado && <span className="verified-badge" style={{fontSize:'0.7rem', color:'#10b981', fontWeight:'bold', display:'flex', alignItems:'center', gap:'4px'}}><FaCheckDouble/> Verificado</span>}
                                             </div>
                                         </td>
                                         <td className="modern-cell">

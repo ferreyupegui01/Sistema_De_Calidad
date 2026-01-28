@@ -1,22 +1,27 @@
-import { getConnection, sql, configSGC } from '../config/db.js'; // <--- CORRECCIÓN: Se importó configSGC
-import { registrarLog } from '../libs/logger.js'; 
+import { getConnection, sql, configSGC } from '../config/db.js';
+import { registrarLog } from '../libs/logger.js';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+// Configuración de rutas seguras
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // =====================================================================
 // 1. GESTIÓN DE CRONOGRAMAS (CABECERAS / CARPETAS)
 // =====================================================================
 
 export const crearCronograma = async (req, res) => {
-    // Agregamos 'tipo' (por defecto GENERAL si no viene)
     const { nombre, anio, descripcion, tipo = 'GENERAL' } = req.body;
 
     try {
-        // Usamos configSGC aquí explícitamente como estaba en tu lógica
         const pool = await sql.connect(configSGC);
         await pool.request()
             .input('Nombre', sql.NVarChar, nombre)
             .input('Anio', sql.Int, anio)
             .input('Descripcion', sql.NVarChar, descripcion)
-            .input('Tipo', sql.NVarChar, tipo) // Nuevo input
+            .input('Tipo', sql.NVarChar, tipo)
             .execute('SP_CrearCronograma');
 
         res.json({ message: 'Cronograma creado correctamente' });
@@ -27,13 +32,12 @@ export const crearCronograma = async (req, res) => {
 };
 
 export const listarCronogramas = async (req, res) => {
-    // Leemos el query param ?tipo=MUESTREO (opcional)
     const { tipo } = req.query;
 
     try {
         const pool = await sql.connect(configSGC);
         const result = await pool.request()
-            .input('Tipo', sql.NVarChar, tipo || null) // Si no hay tipo, envía null
+            .input('Tipo', sql.NVarChar, tipo || null)
             .execute('SP_ListarCronogramas');
 
         res.json(result.recordset);
@@ -47,7 +51,6 @@ export const eliminarCronograma = async (req, res) => {
     const { id } = req.params;
     try {
         const pool = await getConnection();
-        // Borra la carpeta y todas sus actividades en cascada
         await pool.request().input('ID_Cronograma', sql.Int, id).execute('dbo.SP_EliminarCronograma');
         
         await registrarLog(req.usuario.nombre, req.usuario.rol, 'ELIMINAR', 'Cronogramas', `Eliminó cronograma ID: ${id}`);
@@ -62,7 +65,6 @@ export const eliminarCronograma = async (req, res) => {
 // 2. GESTIÓN DE ACTIVIDADES (TAREAS) E INTELIGENCIA DE PROGRAMAS
 // =====================================================================
 
-// --- FUNCIÓN CLAVE: AGENDAR DESDE MÓDULOS (Muestreo, Limpieza, etc.) ---
 export const crearActividadAgendada = async (req, res) => {
     const { actividad, frecuencia, fechaInicio, idFormulario, programa } = req.body;
     
@@ -71,12 +73,9 @@ export const crearActividadAgendada = async (req, res) => {
         await pool.request()
             .input('NombreActividad', sql.NVarChar, actividad)
             .input('Frecuencia', sql.NVarChar, frecuencia)
-            // SQL espera DATE (YYYY-MM-DD), aseguramos que llegue limpio
             .input('FechaInicio', sql.Date, new Date(fechaInicio)) 
             .input('ID_Formulario', sql.Int, idFormulario || null)
             .input('Programa', sql.NVarChar, programa || 'General')
-            // Llamamos al SP corregido que inserta en la tabla 'Actividades'
-            // y gestiona la creación automática de la carpeta si no existe
             .execute('dbo.SP_CrearActividadProgramada'); 
             
         await registrarLog(req.usuario.nombre, req.usuario.rol, 'CREAR', 'Cronogramas', `Agendó actividad: ${actividad} para ${programa}`);
@@ -87,7 +86,6 @@ export const crearActividadAgendada = async (req, res) => {
     }
 };
 
-// --- CRUD MANUAL DE ACTIVIDADES (Dentro de una carpeta específica) ---
 export const crearActividad = async (req, res) => {
     const { idCronograma, nombreActividad, descripcion, responsable, fechaLimite } = req.body;
     try {
@@ -192,10 +190,11 @@ export const agregarSeguimiento = async (req, res) => {
     const { id } = req.params;
     const { nota } = req.body;
     
+    // --- CORRECCIÓN HOSTINGER: RUTA RELATIVA ---
     let urlEvidencia = null;
     if (req.file) {
-        // Asegúrate de que esta URL coincida con tu configuración de servidor
-        urlEvidencia = `http://localhost:3000/uploads/${req.file.filename}`;
+        // Guardamos 'uploads/archivo.png' en lugar de 'http://localhost...'
+        urlEvidencia = `uploads/${req.file.filename}`;
     }
 
     try {
@@ -211,5 +210,26 @@ export const agregarSeguimiento = async (req, res) => {
     } catch (error) { 
         console.error("Error agregarSeguimiento:", error);
         res.status(500).json({ mensaje: 'Error al agregar seguimiento' }); 
+    }
+};
+
+// =========================================================================
+// 4. NUEVO ENDPOINT: VER EVIDENCIA (STREAMING)
+// =========================================================================
+export const verEvidenciaCronograma = (req, res) => {
+    const { nombreArchivo } = req.params;
+
+    // Validación de seguridad (Directory Traversal)
+    if (!nombreArchivo || nombreArchivo.includes('..') || nombreArchivo.includes('/') || nombreArchivo.includes('\\')) {
+        return res.status(400).json({ mensaje: 'Nombre de archivo inválido' });
+    }
+
+    // Ruta física en el servidor
+    const rutaFisica = path.resolve(__dirname, '../uploads', nombreArchivo);
+
+    if (fs.existsSync(rutaFisica)) {
+        res.sendFile(rutaFisica);
+    } else {
+        res.status(404).json({ mensaje: 'Evidencia no encontrada en el servidor' });
     }
 };

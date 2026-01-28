@@ -1,9 +1,12 @@
 import { getConnection, sql } from '../config/db.js';
 import { registrarLog } from '../libs/logger.js';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 
-// --- FUNCIÓN DE AYUDA PARA EVITAR ERRORES DE DECIMALES ---
-// Convierte cualquier valor a un número con máximo 2 decimales
-// Ejemplo: 150.55555 -> 150.56 (Evita el error de TDS Protocol)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const safeDecimal = (val) => {
     if (!val) return 0;
     const num = parseFloat(val);
@@ -17,7 +20,6 @@ export const registrarControlPesos = async (req, res) => {
     const archivo = req.file; 
 
     try {
-        // Parsear JSON strings (necesario por FormData)
         if (typeof cabecera === 'string') cabecera = JSON.parse(cabecera);
         if (typeof muestras === 'string') muestras = JSON.parse(muestras);
 
@@ -27,19 +29,17 @@ export const registrarControlPesos = async (req, res) => {
 
         const fechaVencimientoDate = new Date(cabecera.fechaVencimiento);
 
-        // URL del archivo
-        const urlEvidencia = archivo ? `/uploads/${archivo.filename}` : null;
+        // --- CORRECCIÓN HOSTINGER ---
+        const urlEvidencia = archivo ? `uploads/${archivo.filename}` : null;
 
         const pool = await getConnection();
         const transaction = new sql.Transaction(pool);
 
         await transaction.begin();
 
-        // Usamos safeDecimal también aquí para comparar correctamente
         const min = safeDecimal(cabecera.limiteInferior);
         const max = safeDecimal(cabecera.limiteSuperior);
         
-        // Validaciones de calidad
         const hayDefectosPeso = muestras.some(m => {
             if (m.peso === '' || m.peso === null) return false;
             const p = parseFloat(m.peso);
@@ -56,21 +56,16 @@ export const registrarControlPesos = async (req, res) => {
         const estadoFinal = (hayDefectosPeso || falloSellado) ? 'Rechazado' : 'Aprobado';
 
         const requestCabecera = new sql.Request(transaction); 
-        
-        // APLICAMOS safeDecimal() A TODOS LOS CAMPOS NUMÉRICOS
         const resultCabecera = await requestCabecera
             .input('Lote', sql.NVarChar, cabecera.lote)
             .input('Fecha_Vencimiento', sql.Date, fechaVencimientoDate) 
             .input('Producto', sql.NVarChar, cabecera.producto)
-            // Decimales seguros:
             .input('Peso_Nominal', sql.Decimal(10,2), safeDecimal(cabecera.pesoNominal))
             .input('Proveedor', sql.NVarChar, cabecera.proveedor)
             .input('Maquinista', sql.NVarChar, cabecera.maquinista)
             .input('Sellador', sql.NVarChar, cabecera.sellador)
             .input('Nombre_Lamina', sql.NVarChar, cabecera.nombreLamina)
-            // Enteros:
             .input('Golpes_Minuto', sql.Int, parseInt(cabecera.golpesMinuto) || 0)
-            // Decimales seguros (Aquí estaba el error):
             .input('Temp_Vertical', sql.Decimal(5,2), safeDecimal(cabecera.tempVertical))
             .input('Temp_Horiz_Sup', sql.Decimal(5,2), safeDecimal(cabecera.tempHorizSup))
             .input('Temp_Horiz_Inf', sql.Decimal(5,2), safeDecimal(cabecera.tempHorizInf))
@@ -80,7 +75,6 @@ export const registrarControlPesos = async (req, res) => {
             .input('Limite_Superior', sql.Decimal(10,2), max)
             .input('ID_Usuario', sql.Int, req.usuario.id)
             .input('Estado_Final', sql.NVarChar, estadoFinal)
-            // Nuevos campos booleanos
             .input('Sellado_Inferior', sql.Bit, cabecera.selladoInferior ? 1 : 0)
             .input('Sellado_Superior', sql.Bit, cabecera.selladoSuperior ? 1 : 0)
             .input('Sellado_Vertical', sql.Bit, cabecera.selladoVertical ? 1 : 0)
@@ -90,9 +84,8 @@ export const registrarControlPesos = async (req, res) => {
 
         const idControl = resultCabecera.recordset[0].ID_Generado;
 
-        // Insertar muestras
         for (const muestra of muestras) {
-            const peso = safeDecimal(muestra.peso); // Asegurar decimales en muestras también
+            const peso = safeDecimal(muestra.peso);
             const esConforme = (peso >= min && peso <= max);
 
             const requestDetalle = new sql.Request(transaction);
@@ -114,24 +107,21 @@ export const registrarControlPesos = async (req, res) => {
         if (typeof transaction !== 'undefined' && transaction._aborted === false) {
             await transaction.rollback();
         }
-        // Mostramos el mensaje exacto del error en la respuesta para depurar
-        res.status(500).json({ mensaje: 'Error al guardar. Revise los datos numéricos.', error: error.message });
+        res.status(500).json({ mensaje: 'Error al guardar.', error: error.message });
     }
 };
 
-// --- LISTAR HISTORIAL ---
+// ... listarControles y obtenerDetalleControl quedan igual ...
 export const listarControles = async (req, res) => {
     try {
         const pool = await getConnection();
         const result = await pool.request().execute('dbo.SP_ListarControlesPesos');
         res.json(result.recordset);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ mensaje: 'Error al listar controles' });
     }
 };
 
-// --- OBTENER DETALLE ---
 export const obtenerDetalleControl = async (req, res) => {
     const { id } = req.params;
     try {
@@ -149,7 +139,25 @@ export const obtenerDetalleControl = async (req, res) => {
             muestras: result.recordsets[1]
         });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ mensaje: 'Error al obtener detalle' });
+    }
+};
+
+// ==========================================
+// NUEVO: VER EVIDENCIA PESOS (STREAMING)
+// ==========================================
+export const verEvidenciaPesos = (req, res) => {
+    const { nombreArchivo } = req.params;
+
+    if (!nombreArchivo || nombreArchivo.includes('..')) {
+        return res.status(400).json({ mensaje: 'Archivo inválido' });
+    }
+
+    const rutaFisica = path.resolve(__dirname, '../uploads', nombreArchivo);
+
+    if (fs.existsSync(rutaFisica)) {
+        res.sendFile(rutaFisica);
+    } else {
+        res.status(404).json({ mensaje: 'Foto no encontrada' });
     }
 };

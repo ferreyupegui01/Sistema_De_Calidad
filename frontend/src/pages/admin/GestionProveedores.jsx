@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
-import { API_URL, getAuthHeaders } from '../../services/api';
+import { API_URL, getAuthHeaders, apiFetchBlob, extractFilename } from '../../services/api';
 
 // --- SERVICIOS ---
 import { getReportes } from '../../services/reportesService'; 
@@ -131,7 +131,7 @@ const GestionProveedores = () => {
     };
 
     // ==========================================
-    // 2. LÓGICA AUDITORÍAS
+    // 2. LÓGICA AUDITORÍAS (EVALUACIONES)
     // ==========================================
     const loadEvaluaciones = async () => {
         try {
@@ -142,6 +142,22 @@ const GestionProveedores = () => {
 
     const handleViewEvaluacion = (id) => { setSelectedEvaluacionId(id); setShowViewModal(true); };
 
+    // --- FUNCIÓN SEGURA PARA VER CARTA INVIMA ---
+    const handleViewCarta = async (urlCarta) => {
+        if (!urlCarta) return;
+        try {
+            const filename = extractFilename(urlCarta);
+            // Ruta segura de streaming que crearemos en backend
+            const blob = await apiFetchBlob(`/proveedores/carta/${filename}`);
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        } catch (error) {
+            console.error("Error al ver carta:", error);
+            if (urlCarta.startsWith('http')) window.open(urlCarta, '_blank');
+            else Swal.fire('Error', 'No se pudo abrir el documento adjunto', 'error');
+        }
+    };
+
     const handleUploadCarta = async (idEvaluacion) => {
         const { value: file } = await Swal.fire({
             title: 'Subir Carta INVIMA', text: 'Seleccione PDF o Imagen.', input: 'file',
@@ -151,6 +167,8 @@ const GestionProveedores = () => {
             const formData = new FormData(); formData.append('archivo', file);
             Swal.fire({ title: 'Subiendo...', didOpen: () => Swal.showLoading() });
             try {
+                // Nota: Usamos fetch directo aquí porque Swal input file retorna un objeto File directo
+                // Pero es seguro usar los headers manuales.
                 const res = await fetch(`${API_URL}/proveedores/${idEvaluacion}/carta-invima`, {
                     method: 'PUT', headers: { 'Authorization': getAuthHeaders()['Authorization'] }, body: formData
                 });
@@ -318,7 +336,13 @@ const GestionProveedores = () => {
                                                 <div style={{display:'flex', justifyContent:'center', gap:'10px'}}>
                                                     <button onClick={() => handleViewEvaluacion(ev.ID_Evaluacion)} style={{display:'flex', alignItems:'center', gap:'5px', background:'#f0f9ff', border:'1px solid #bae6fd', color:'#0369a1', padding:'5px 12px', borderRadius:'6px', cursor:'pointer'}}><FaEye /> Ver</button>
                                                     {ev.Url_Carta_Invima ? 
-                                                        <a href={ev.Url_Carta_Invima} target="_blank" rel="noopener noreferrer" style={{display:'flex', alignItems:'center', gap:'5px', background:'#fef2f2', border:'1px solid #fecaca', color:'#dc2626', padding:'5px 12px', borderRadius:'6px', textDecoration:'none'}}><FaFilePdf /> Carta</a> : 
+                                                        // AQUÍ ESTÁ EL CAMBIO IMPORTANTE: BOTÓN SEGURO
+                                                        <button 
+                                                            onClick={() => handleViewCarta(ev.Url_Carta_Invima)} 
+                                                            style={{display:'flex', alignItems:'center', gap:'5px', background:'#fef2f2', border:'1px solid #fecaca', color:'#dc2626', padding:'5px 12px', borderRadius:'6px', cursor:'pointer'}}
+                                                        >
+                                                            <FaFilePdf /> Carta
+                                                        </button> : 
                                                         <button onClick={() => handleUploadCarta(ev.ID_Evaluacion)} style={{display:'flex', alignItems:'center', gap:'5px', background:'#ecfdf5', border:'1px solid #a7f3d0', color:'#059669', padding:'5px 12px', borderRadius:'6px', cursor:'pointer'}}><FaFileUpload /> Subir</button>
                                                     }
                                                 </div>
@@ -344,10 +368,6 @@ const GestionProveedores = () => {
 
                     <div className="control-bar" style={{marginBottom:'20px', display:'flex', justifyContent:'space-between', flexWrap:'wrap', gap:'10px'}}>
                         
-                        {/* --- BUSCADOR CORREGIDO SIN CLASE EXTERNA ---
-                            Se eliminó className="search-box" para evitar conflictos CSS.
-                            Todo se maneja con Flexbox inline.
-                        */}
                         <div style={{
                             display:'flex', 
                             alignItems:'center', 

@@ -1,5 +1,11 @@
 import { getConnection, sql } from '../config/db.js';
 import { registrarLog } from '../libs/logger.js';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // ==========================================
 // LISTAR TODAS LAS AUDITORÍAS
@@ -16,18 +22,16 @@ export const getAuditorias = async (req, res) => {
 };
 
 // ==========================================
-// CREAR AUDITORÍA (CON EVIDENCIA)
+// CREAR AUDITORÍA (CON SUBIDA REAL)
 // ==========================================
 export const createAuditoria = async (req, res) => {
-    // Cuando usamos 'multipart/form-data', los campos de texto vienen en req.body
     const { tipo, auditor, area, normas, observaciones } = req.body;
     
-    // Verificamos si multer procesó un archivo
+    // --- CORRECCIÓN HOSTINGER ---
     let urlEvidencia = null;
     if (req.file) {
-        // Construimos la ruta relativa para guardarla en BD.
-        // Asegúrate de que tu servidor esté sirviendo la carpeta 'uploads' como estática.
-        urlEvidencia = `/uploads/${req.file.filename}`; 
+        // Guardamos 'uploads/archivo.pdf'
+        urlEvidencia = `uploads/${req.file.filename}`; 
     }
 
     if (!tipo || !auditor || !area) {
@@ -42,11 +46,10 @@ export const createAuditoria = async (req, res) => {
             .input('Area', sql.NVarChar, area)
             .input('Normas', sql.NVarChar, normas || '')
             .input('Observaciones', sql.NVarChar, observaciones || '')
-            .input('Url_Evidencia', sql.NVarChar, urlEvidencia) // Aquí va la ruta del archivo o null
-            .input('ID_Usuario', sql.Int, req.usuario.id)       // ID del usuario logueado (desde el token)
+            .input('Url_Evidencia', sql.NVarChar, urlEvidencia) 
+            .input('ID_Usuario', sql.Int, req.usuario.id)
             .execute('dbo.SP_CrearAuditoria');
 
-        // Registro en Bitácora Global
         await registrarLog(req.usuario.nombre, req.usuario.rol, 'CREAR', 'AUDITORIA', `Registró auditoría ${tipo} con evidencia.`);
 
         res.status(201).json({ mensaje: 'Auditoría registrada correctamente' });
@@ -57,42 +60,50 @@ export const createAuditoria = async (req, res) => {
 };
 
 // ==========================================
-// GESTIÓN DINÁMICA DE AUDITORES
+// GESTIÓN DINÁMICA (Sin cambios, solo logica)
 // ==========================================
 export const manageAuditores = async (req, res) => {
-    const { nuevo } = req.body; // Si viene un nombre, lo intenta crear. Si no, solo lista.
-
+    const { nuevo } = req.body; 
     try {
         const pool = await getConnection();
         const request = pool.request();
-        
-        // Si 'nuevo' tiene valor, lo pasamos al SP. Si es null/vacío, pasamos null para que solo liste.
         request.input('Nombre', sql.NVarChar, nuevo || null);
-
         const result = await request.execute('dbo.SP_GestionarAuditorDinamico');
         res.json(result.recordset);
     } catch (error) {
-        console.error("Error gestionando auditores:", error);
-        res.status(500).json({ mensaje: 'Error al gestionar la lista de auditores' });
+        res.status(500).json({ mensaje: 'Error al gestionar auditores' });
     }
 };
 
-// ==========================================
-// GESTIÓN DINÁMICA DE ÁREAS
-// ==========================================
 export const manageAreas = async (req, res) => {
     const { nuevo } = req.body;
-
     try {
         const pool = await getConnection();
         const request = pool.request();
-        
         request.input('Nombre', sql.NVarChar, nuevo || null);
-
         const result = await request.execute('dbo.SP_GestionarAreaDinamica');
         res.json(result.recordset);
     } catch (error) {
-        console.error("Error gestionando áreas:", error);
-        res.status(500).json({ mensaje: 'Error al gestionar la lista de áreas' });
+        res.status(500).json({ mensaje: 'Error al gestionar áreas' });
     }
 };
+
+// ==========================================
+// NUEVO: VER EVIDENCIA AUDITORÍA
+// ==========================================
+export const verEvidenciaAuditoria = (req, res) => {
+    const { nombreArchivo } = req.params;
+
+    if (!nombreArchivo || nombreArchivo.includes('..') || nombreArchivo.includes('/') || nombreArchivo.includes('\\')) {
+        return res.status(400).json({ mensaje: 'Nombre de archivo inválido' });
+    }
+
+    const rutaFisica = path.resolve(__dirname, '../uploads', nombreArchivo);
+
+    if (fs.existsSync(rutaFisica)) {
+        res.sendFile(rutaFisica);
+    } else {
+        res.status(404).json({ mensaje: 'Evidencia no encontrada en el servidor' });
+    }
+};
+

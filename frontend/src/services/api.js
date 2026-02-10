@@ -2,7 +2,7 @@
 
 // 1. Configuración dinámica (Detecta si es Local o Producción automáticamente)
 // Si existe la variable de entorno VITE_API_URL la usa, si no, usa localhost
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+export const API_URL = import.meta.env.VITE_API_URL || '127.0.0.1';
 
 // 2. Helper clásico de headers (Mantenido por compatibilidad)
 export const getAuthHeaders = () => {

@@ -29,20 +29,18 @@ const Login = () => {
         try {
             const data = await loginService(cedula, password);
             
-            // --- CORRECCIÓN CRITICA AQUÍ ---
-            // 1. Forzamos el guardado en localStorage ANTES de usar el contexto
-            // Esto asegura que GestionCapacitaciones encuentre el token sí o sí.
+            // 1. Guardar en localStorage inmediatamente
             localStorage.setItem('token', data.token);
-            
-            // Si tu backend devuelve el usuario completo, guárdalo también
             if (data.usuario) {
                 localStorage.setItem('user', JSON.stringify(data.usuario));
             }
 
-            // 2. Actualizamos el contexto de React (para menús, sidebar, etc.)
-            loginUser(data.usuario, data.token);
+            // 2. Actualizar contexto
+            if (loginUser) {
+                loginUser(data.usuario, data.token);
+            }
             
-            // 3. Redirección basada en rol
+            // 3. Redirección por Rol
             if (data.usuario.rol === 'SuperAdmin' || data.usuario.rol === 'AdminCalidad') {
                 navigate('/admin/dashboard');
             } else {
@@ -52,8 +50,8 @@ const Login = () => {
         } catch (error) {
             console.error(error);
             setAlerta(error.message || 'Error al iniciar sesión');
-            // Limpiamos basura por si acaso
             localStorage.removeItem('token');
+            localStorage.removeItem('user');
         } finally {
             setCargando(false);
         }
@@ -61,13 +59,11 @@ const Login = () => {
 
     return (
         <div className="login-wrapper">
-            {/* BOTÓN VOLVER FLOTANTE */}
             <button className="btn-back-nav" onClick={() => navigate('/')}>
                 <FaArrowLeft /> Volver
             </button>
 
             <div className="login-card-split">
-                {/* PANEL IZQUIERDO */}
                 <div className="login-left">
                     <div className="left-content">
                         <h1>Sistema de <br/>Gestión de <br/>Calidad</h1>
@@ -76,7 +72,6 @@ const Login = () => {
                     </div>
                 </div>
 
-                {/* PANEL DERECHO */}
                 <div className="login-right">
                     <div className="logo-container">
                         <img src={logoImg} alt="Logo El Trece" className="logo-login" />

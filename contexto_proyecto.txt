@@ -1,79 +1,41 @@
-CONTEXTO DEL PROYECTO (FECHA: 2026-01-28T19:25:03.881Z):
+CONTEXTO DEL PROYECTO (FECHA: 2026-02-02T20:31:09.969Z):
 
 
 ==================================================================
 ARCHIVO: backend\config\db.js
 ==================================================================
+// backend/config/db.js
 import sql from 'mssql';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// 1. Configuración SGC (Principal)
+// 1. Configuración SGC (Principal - Esta SÍ vive en la VPS o Hostinger)
 export const configSGC = {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     server: process.env.DB_SERVER,
     database: process.env.DB_NAME,
     port: 1433,
-    options: { encrypt: false, trustServerCertificate: true },
-    // Timeout por defecto es 15000 (15s)
+    options: { 
+        encrypt: false, 
+        trustServerCertificate: true,
+        enableArithAbort: true 
+    },
 };
 
-// 2. Configuración RRHH (IP 10.10.10.8)
-const configRRHH = {
-    user: process.env.DB_RRHH_USER,
-    password: process.env.DB_RRHH_PASSWORD,
-    server: process.env.DB_RRHH_SERVER,
-    database: process.env.DB_RRHH_NAME,
-    port: 1433,
-    options: { encrypt: false, trustServerCertificate: true }
-};
-
-// 3. Configuración ERP (IP 10.10.10.32)
-const configERP = {
-    user: process.env.DB_ERP_USER,
-    password: process.env.DB_ERP_PASSWORD,
-    server: process.env.DB_ERP_SERVER,
-    database: process.env.DB_ERP_NAME,
-    port: 1433,
-    options: { encrypt: false, trustServerCertificate: true }
-};
-
-// Pools Singleton (Para no abrir mil conexiones)
+// Pool Singleton (Solo para la base de datos principal)
 let poolSGC = null;
-let poolRRHH = null;
-let poolERP = null;
 
-// Conexión Principal
+// Conexión Principal (Única necesaria en VPS)
 export async function getConnection() {
     try {
-        if (!poolSGC) poolSGC = await new sql.ConnectionPool(configSGC).connect();
+        if (!poolSGC) {
+            poolSGC = await new sql.ConnectionPool(configSGC).connect();
+        }
         return poolSGC;
     } catch (error) {
-        console.error('Error conectando a SGC:', error);
-        throw error;
-    }
-}
-
-// Conexión RRHH (Gosem)
-export async function getConnectionRRHH() {
-    try {
-        if (!poolRRHH) poolRRHH = await new sql.ConnectionPool(configRRHH).connect();
-        return poolRRHH;
-    } catch (error) {
-        console.error('Error conectando a RRHH (10.10.10.8):', error);
-        throw error;
-    }
-}
-
-// Conexión ERP (Sofsin)
-export async function getConnectionERP() {
-    try {
-        if (!poolERP) poolERP = await new sql.ConnectionPool(configERP).connect();
-        return poolERP;
-    } catch (error) {
-        console.error('Error conectando a ERP (10.10.10.32):', error);
+        console.error('❌ Error crítico conectando a BD Principal SGC:', error);
         throw error;
     }
 }
@@ -548,8 +510,10 @@ import jwt from 'jsonwebtoken';
 import { registrarLog } from '../libs/logger.js'; 
 
 export const login = async (req, res) => {
+    // 1. Extracción de datos (Deben coincidir con el frontend)
     const { cedula, password } = req.body;
 
+    // 2. Validación básica
     if (!cedula || !password) {
         return res.status(400).json({ mensaje: 'Por favor ingrese cédula y contraseña' });
     }
@@ -557,34 +521,41 @@ export const login = async (req, res) => {
     try {
         const pool = await getConnection();
         
-        // 2. Ejecutar el Procedimiento Almacenado (Ahora trae el Email)
+        // 3. Ejecutar SP (Asumiendo que el SP espera @Cedula)
         const result = await pool.request()
             .input('Cedula', sql.NVarChar, cedula)
             .execute('dbo.SP_ValidarLogin');
 
+        // 4. Verificar existencia del usuario
         if (result.recordset.length === 0) {
-            return res.status(401).json({ mensaje: 'Credenciales inválidas (Usuario no existe)' });
+            return res.status(401).json({ mensaje: 'Credenciales inválidas (Usuario no encontrado)' });
         }
 
         const usuario = result.recordset[0];
 
+        // 5. Verificar estado activo
         if (!usuario.Estado) {
             return res.status(403).json({ mensaje: 'Usuario inactivo. Contacte al administrador.' });
         }
 
+        // 6. Verificar contraseña
         const isMatch = await bcrypt.compare(password, usuario.Password_Hash);
         if (!isMatch) {
             return res.status(401).json({ mensaje: 'Credenciales inválidas (Contraseña incorrecta)' });
         }
 
-        // 6. Generar Token (Opcional: puedes incluir el email en el token si quieres, pero no es estricto)
+        // 7. Generar Token
         const token = jwt.sign(
-            { id: usuario.ID_Usuario, rol: usuario.Rol, nombre: usuario.Nombre_Completo }, 
-            process.env.JWT_SECRET, 
+            { 
+                id: usuario.ID_Usuario, 
+                rol: usuario.Rol, 
+                nombre: usuario.Nombre_Completo 
+            }, 
+            process.env.JWT_SECRET || 'secretkey', 
             { expiresIn: '8h' }
         );
 
-        // --- REGISTRAR LOG ---
+        // 8. Registrar Log
         await registrarLog(
             usuario.Nombre_Completo, 
             usuario.Rol, 
@@ -593,22 +564,23 @@ export const login = async (req, res) => {
             `Inicio de sesión exitoso desde IP: ${req.ip || 'Desconocida'}`
         );
 
-        // 7. Respuesta exitosa (AQUÍ AGREGAMOS EL EMAIL)
+        // 9. Respuesta Final
         res.json({
             mensaje: 'Login exitoso',
             token,
             usuario: {
                 id: usuario.ID_Usuario,
-                cedula: usuario.Cedula, // Útil tenerlo
+                cedula: usuario.Cedula,
                 nombre: usuario.Nombre_Completo,
                 rol: usuario.Rol,
-                email: usuario.Email // <--- ¡AQUÍ ESTÁ LA SOLUCIÓN! Se envía al frontend
+                email: usuario.Email,
+                area: usuario.Area
             }
         });
 
     } catch (error) {
         console.error('Error en login:', error);
-        res.status(500).json({ mensaje: 'Error del servidor', error: error.message });
+        res.status(500).json({ mensaje: 'Error interno del servidor', error: error.message });
     }
 };
 
@@ -1967,153 +1939,106 @@ export const verArchivo = async (req, res) => {
 ==================================================================
 ARCHIVO: backend\controllers\externosController.js
 ==================================================================
-import { getConnectionRRHH, getConnectionERP } from '../config/db.js';
+// backend/controllers/externosController.js
 
-// --- DESDE RRHH (10.10.10.8) ---
+import dotenv from 'dotenv';
 
-// 1. Obtener Maquinistas (Oficio 23)
+dotenv.config();
+
+// Obtenemos la URL y la Clave desde las variables de entorno (.env)
+// Ejemplo: https://tunel-de-tu-empresa.trycloudflare.com
+const BRIDGE_URL = process.env.BRIDGE_API_URL; 
+const BRIDGE_KEY = process.env.BRIDGE_SECRET_KEY;
+
+// Función auxiliar para realizar las peticiones al puente
+const fetchFromBridge = async (endpoint) => {
+    try {
+        if (!BRIDGE_URL) throw new Error("Falta definir BRIDGE_API_URL en el .env");
+
+        const response = await fetch(`${BRIDGE_URL}${endpoint}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': BRIDGE_KEY // Autenticación segura
+            }
+        });
+
+        if (!response.ok) {
+            console.error(`Error Puente [${endpoint}]: ${response.statusText}`);
+            return []; // Retorna array vacío para no romper el frontend
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error(`Error crítico conectando al puente [${endpoint}]:`, error.message);
+        return [];
+    }
+};
+
+// --- CONTROLADORES (Ahora consumen la API Puente) ---
+
+// 1. Obtener Maquinistas (RRHH)
 export const getMaquinistas = async (req, res) => {
-    try {
-        const pool = await getConnectionRRHH();
-        const result = await pool.request().query(`
-            SELECT
-                rh_co_contratos.cod_contrato,
-                rh_recursos.nombres,
-                rh_recursos.apellidos
-            FROM rh_co_contratos
-            INNER JOIN rh_recursos ON rh_co_contratos.id_recurso = rh_recursos.id_recurso
-            INNER JOIN rh_oficios ON rh_co_contratos.id_oficio = rh_oficios.id_oficio
-            WHERE rh_co_contratos.estado = '1'
-              AND cod_oficio = '23'
-        `);
-
-        // Formateamos
-        const data = result.recordset.map(m => ({
-            id: m.cod_contrato,
-            nombre: `${m.nombres} ${m.apellidos}`.trim()
-        }));
-        res.json(data);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json([]);
-    }
+    // 1. Pedimos los datos crudos al puente
+    const rawData = await fetchFromBridge('/api/maquinistas');
+    
+    // 2. Procesamos/Limpiamos los datos aquí en la VPS
+    const data = rawData.map(m => ({
+        id: m.cod_contrato,
+        nombre: `${m.nombres} ${m.apellidos}`.trim()
+    }));
+    
+    res.json(data);
 };
 
-// 2. Obtener Selladores (Oficio 24)
+// 2. Obtener Selladores (RRHH)
 export const getSelladores = async (req, res) => {
-    try {
-        const pool = await getConnectionRRHH();
-        const result = await pool.request().query(`
-            SELECT
-                rh_co_contratos.cod_contrato,
-                rh_recursos.nombres,
-                rh_recursos.apellidos
-            FROM rh_co_contratos
-            INNER JOIN rh_recursos ON rh_co_contratos.id_recurso = rh_recursos.id_recurso
-            INNER JOIN rh_oficios ON rh_co_contratos.id_oficio = rh_oficios.id_oficio
-            WHERE rh_co_contratos.estado = '1'
-              AND cod_oficio = '24'
-        `);
+    const rawData = await fetchFromBridge('/api/selladores');
+    
+    const data = rawData.map(s => ({
+        id: s.cod_contrato,
+        nombre: `${s.nombres} ${s.apellidos}`.trim()
+    }));
 
-        const data = result.recordset.map(s => ({
-            id: s.cod_contrato,
-            nombre: `${s.nombres} ${s.apellidos}`.trim()
-        }));
-        res.json(data);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json([]);
-    }
+    res.json(data);
 };
 
-// --- DESDE ERP (10.10.10.32) ---
-
-// 3. Obtener Productos (Materia Prima)
+// 3. Obtener Productos (ERP)
 export const getProductos = async (req, res) => {
-    try {
-        const pool = await getConnectionERP();
-        
-        // NOTA: Multiplicamos rumfactor * 1000 asumiendo que el ERP lo tiene en Kilos (0.5 kg -> 500g)
-        // Si en tu ERP el factor ya está en gramos, quita el "* 1000".
-        const result = await pool.request().query(`
-            SELECT 
-                i.itecodigo, 
-                i.itedesclarg,
-                (r.rumfactor * 1000) AS peso_gramos 
-            FROM [dbo].[in_items] i
-            LEFT JOIN [dbo].[in_relaunidmedi] r 
-                ON i.iteuma = r.rumunidmedide 
-                AND r.rumcompania = '01' 
-            WHERE (i.itecompania LIKE '%01%')
-              AND (i.itetipoitem LIKE '%PRO%')
-            ORDER BY i.itedesclarg ASC
-        `);
+    const rawData = await fetchFromBridge('/api/items/producidos');
 
-        const data = result.recordset.map(p => ({
-            codigo: p.itecodigo,
-            // Quitamos espacios extra al nombre
-            descripcion: p.itedesclarg.trim(), 
-            // Si el peso es null o 0, enviamos '', si no, lo enviamos redondeado (sin decimales .00)
-            peso: p.peso_gramos ? Math.round(p.peso_gramos) : '' 
-        }));
+    const data = rawData.map(p => ({
+        codigo: p.itecodigo,
+        descripcion: p.itedesclarg ? p.itedesclarg.trim() : 'Sin Descripción',
+        // La lógica de redondeo se mantiene aquí
+        peso: p.peso_gramos ? Math.round(p.peso_gramos) : '' 
+    }));
 
-        res.json(data);
-    } catch (error) {
-        console.error("Error en getProductos:", error);
-        res.status(500).json([]);
-    }
+    res.json(data);
 };
 
-// 4. Obtener Proveedores
+// 4. Obtener Proveedores (ERP)
 export const getProveedores = async (req, res) => {
-    try {
-        const pool = await getConnectionERP();
-        
-        // MODIFICACIÓN: Se eliminaron los filtros 'tgeactivecono' para traer todos
-        const result = await pool.request().query(`
-            SELECT tgecodigo, tgenombcomp
-            FROM [dbo].[un_tercegener]
-            WHERE [tgecompania] LIKE '%01%' 
-            -- Se eliminó el filtro de códigos específicos (2013, 2221, etc.)
-            ORDER BY tgenombcomp ASC
-        `);
+    const rawData = await fetchFromBridge('/api/items/proveedores');
 
-        const data = result.recordset.map(p => ({
-            codigo: p.tgecodigo,
-            nombre: p.tgenombcomp
-        }));
-        res.json(data);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json([]);
-    }
+    const data = rawData.map(p => ({
+        codigo: p.tgecodigo,
+        nombre: p.tgenombcomp
+    }));
+
+    res.json(data);
 };
 
-
-// 5. Obtener Clientes (Para PMIR - Residuos)
-// ...
+// 5. Obtener Clientes (ERP)
 export const getClientes = async (req, res) => {
-    try {
-        const pool = await getConnectionERP(); // Conexión a la base externa
-        
-        // MODIFICACIÓN: Quitamos "TOP (1000)" para que traiga TODO el universo de clientes
-        const result = await pool.request().query(`
-            SELECT tclcodigo, tclnombre
-            FROM [SSF_ELTRECE].[dbo].[un_terceclien]
-            WHERE [tclcompania] LIKE '%01%' 
-            ORDER BY tclnombre ASC
-        `);
+    const rawData = await fetchFromBridge('/api/items/clientes');
 
-        const data = result.recordset.map(c => ({
-            codigo: c.tclcodigo,
-            nombre: c.tclnombre 
-        }));
-        
-        res.json(data);
-    } catch (error) {
-        console.error("Error obteniendo clientes:", error);
-        res.status(500).json([]);
-    }
+    const data = rawData.map(c => ({
+        codigo: c.tclcodigo,
+        nombre: c.tclnombre 
+    }));
+    
+    res.json(data);
 };
 
 
@@ -24358,20 +24283,18 @@ const Login = () => {
         try {
             const data = await loginService(cedula, password);
             
-            // --- CORRECCIÓN CRITICA AQUÍ ---
-            // 1. Forzamos el guardado en localStorage ANTES de usar el contexto
-            // Esto asegura que GestionCapacitaciones encuentre el token sí o sí.
+            // 1. Guardar en localStorage inmediatamente
             localStorage.setItem('token', data.token);
-            
-            // Si tu backend devuelve el usuario completo, guárdalo también
             if (data.usuario) {
                 localStorage.setItem('user', JSON.stringify(data.usuario));
             }
 
-            // 2. Actualizamos el contexto de React (para menús, sidebar, etc.)
-            loginUser(data.usuario, data.token);
+            // 2. Actualizar contexto
+            if (loginUser) {
+                loginUser(data.usuario, data.token);
+            }
             
-            // 3. Redirección basada en rol
+            // 3. Redirección por Rol
             if (data.usuario.rol === 'SuperAdmin' || data.usuario.rol === 'AdminCalidad') {
                 navigate('/admin/dashboard');
             } else {
@@ -24381,8 +24304,8 @@ const Login = () => {
         } catch (error) {
             console.error(error);
             setAlerta(error.message || 'Error al iniciar sesión');
-            // Limpiamos basura por si acaso
             localStorage.removeItem('token');
+            localStorage.removeItem('user');
         } finally {
             setCargando(false);
         }
@@ -24390,13 +24313,11 @@ const Login = () => {
 
     return (
         <div className="login-wrapper">
-            {/* BOTÓN VOLVER FLOTANTE */}
             <button className="btn-back-nav" onClick={() => navigate('/')}>
                 <FaArrowLeft /> Volver
             </button>
 
             <div className="login-card-split">
-                {/* PANEL IZQUIERDO */}
                 <div className="login-left">
                     <div className="left-content">
                         <h1>Sistema de <br/>Gestión de <br/>Calidad</h1>
@@ -24405,7 +24326,6 @@ const Login = () => {
                     </div>
                 </div>
 
-                {/* PANEL DERECHO */}
                 <div className="login-right">
                     <div className="logo-container">
                         <img src={logoImg} alt="Logo El Trece" className="logo-login" />
@@ -25192,25 +25112,29 @@ export const getAuditoriaData = async () => {
 ==================================================================
 ARCHIVO: frontend\src\services\authService.js
 ==================================================================
-// frontend/src/services/authService.js
 import { API_URL } from './api';
 
 export const loginService = async (cedula, password) => {
-    const response = await fetch(`${API_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ cedula, password })
-    });
+    try {
+        const response = await fetch(`${API_URL}/auth/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json' // OBLIGATORIO para evitar error 400
+            },
+            body: JSON.stringify({ cedula, password })
+        });
 
-    const data = await response.json();
+        const data = await response.json();
 
-    if (!response.ok) {
-        throw new Error(data.mensaje || 'Error en la petición');
+        if (!response.ok) {
+            throw new Error(data.mensaje || 'Error en la petición de autenticación');
+        }
+
+        return data;
+    } catch (error) {
+        console.error("Error en loginService:", error);
+        throw error;
     }
-
-    return data;
 };
 
 

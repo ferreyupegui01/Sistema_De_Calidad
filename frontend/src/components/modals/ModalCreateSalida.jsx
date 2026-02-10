@@ -144,7 +144,8 @@ const ModalCreateSalida = ({ isOpen, onClose, onSuccess }) => {
                             {showProdList && searchProd && listas.productos.length > 0 && (
                                 <div className="dropdown-suggestions">
                                     {listas.productos
-                                        .filter(p => p.descripcion.toLowerCase().includes(searchProd.toLowerCase()))
+                                        // CORRECCIÓN: Se agrega validación (p.descripcion || '')
+                                        .filter(p => (p.descripcion || '').toLowerCase().includes(searchProd.toLowerCase()))
                                         .slice(0, 8)
                                         .map((p, i) => (
                                             <div key={i} className="suggestion-item" onClick={() => {
@@ -177,7 +178,8 @@ const ModalCreateSalida = ({ isOpen, onClose, onSuccess }) => {
                             {showCliList && searchCli && listas.clientes.length > 0 && (
                                 <div className="dropdown-suggestions">
                                     {listas.clientes
-                                        .filter(c => c.nombre.toLowerCase().includes(searchCli.toLowerCase()))
+                                        // CORRECCIÓN PRINCIPAL: Se agrega validación (c.nombre || '') para evitar el crash
+                                        .filter(c => (c.nombre || '').toLowerCase().includes(searchCli.toLowerCase()))
                                         .slice(0, 8)
                                         .map((c, i) => (
                                             <div key={i} className="suggestion-item" onClick={() => {
